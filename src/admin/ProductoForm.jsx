@@ -3,7 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { getProduct, saveProduct, uploadImage, listCategories } from '../lib/data'
 import { weightVariants } from '../lib/demoData'
 import { uid } from '../lib/format'
-import { isIg, parseImageLink } from '../lib/images'
+import { isIg, parseImageLink, sameMedia, igParts, withRatio, RATIOS } from '../lib/images'
+import { IgFrame } from '../components/Media'
 
 const EMPTY = { name: '', category: '', description: '', images: [], active: true, featured: false, variants: [] }
 
@@ -53,7 +54,7 @@ export default function ProductoForm() {
   const addLink = () => {
     try {
       const v = parseImageLink(link)
-      if (p.images.includes(v)) throw new Error('Ese enlace ya está agregado')
+      if (p.images.some((x) => sameMedia(x, v))) throw new Error('Ese enlace ya está agregado')
       setP((x) => ({ ...x, images: [...x.images, v] })); setLink(''); setError('')
     } catch (err) { setError(err.message) }
   }
@@ -101,15 +102,21 @@ export default function ProductoForm() {
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink() } }} />
           <button type="button" className="btn ghost" onClick={addLink}>Agregar enlace</button>
         </div>
-        <p className="muted small">Los enlaces no usan espacio de Supabase. Las publicaciones de Instagram se muestran incrustadas en la página del producto (deben ser públicas). La portada de la tienda usa la primera foto que no sea de Instagram.</p>
+        <p className="muted small">Los enlaces no usan espacio de Supabase. Las publicaciones de Instagram (deben ser públicas) se muestran en la página del producto recortadas a un marco; elegí el encuadre que mejor calce. La portada de la tienda usa la primera foto que no sea de Instagram.</p>
         {p.images.length === 0 && <p className="muted small">Sin fotos todavía. La primera es la portada. Podés sacarlas con la cámara del celular.</p>}
         <div className="img-list">
           {p.images.map((src, i) => (
             <div key={src + i} className="img-item">
               {isIg(src)
-                ? <div className="ig-tile"><b>Instagram</b><small>{src.slice(3)}</small></div>
+                ? <>
+                    <IgFrame src={src} mini width={130} />
+                    <select className="ratio-sel" value={igParts(src).ratio} aria-label="Encuadre"
+                      onChange={(e) => set('images', p.images.map((x, k) => (k === i ? withRatio(x, e.target.value) : x)))}>
+                      {RATIOS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                    </select>
+                  </>
                 : <img src={src} alt="" referrerPolicy="no-referrer" />}
-              {i === 0 && <span className="tag">Portada</span>}
+              {!isIg(src) && p.images.findIndex((x) => !isIg(x)) === i && <span className="tag">Portada</span>}
               <div className="img-actions">
                 <button type="button" onClick={() => moveImg(i, -1)} disabled={i === 0} aria-label="Mover antes">←</button>
                 <button type="button" onClick={() => moveImg(i, 1)} disabled={i === p.images.length - 1} aria-label="Mover después">→</button>

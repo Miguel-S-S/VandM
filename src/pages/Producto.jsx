@@ -5,7 +5,8 @@ import { useCart } from '../lib/cart'
 import { useSettings } from '../lib/settings'
 import { fmtMoney } from '../lib/format'
 import { Photo } from '../components/ProductCard'
-import { photosOf, igOf, igEmbedUrl, igPostUrl } from '../lib/images'
+import { photosOf, igOf, igPostUrl } from '../lib/images'
+import { IgFrame } from '../components/Media'
 
 export default function Producto() {
   const { id } = useParams()
@@ -89,9 +90,9 @@ export default function Producto() {
             <div className="ig-embeds">
               <h4>Mirá en Instagram</h4>
               {igs.map((g) => (
-                <div key={g}>
-                  <iframe src={igEmbedUrl(g)} title="Instagram" loading="lazy" allowTransparency="true" scrolling="no" />
-                  <a href={igPostUrl(g)} target="_blank" rel="noreferrer" className="small">Abrir en Instagram ↗</a>
+                <div key={g} className="ig-item">
+                  <IgFrame src={g} />
+                  <a href={igPostUrl(g)} target="_blank" rel="noreferrer" className="small">Ver en Instagram ↗</a>
                 </div>
               ))}
             </div>

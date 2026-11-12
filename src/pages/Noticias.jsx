@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Media from '../components/Media'
 import { listNews } from '../lib/data'
 
 export default function Noticias() {
@@ -17,7 +18,7 @@ export default function Noticias() {
             <span className="tag static">{n.tag}</span>
             {n.date && <small className="muted"> {new Date(n.date + 'T12:00:00').toLocaleDateString('es-AR', { dateStyle: 'long' })}</small>}
             <h3>{n.title}</h3>
-            {n.image && <img className="news-img" src={n.image} alt={n.title} loading="lazy" />}
+            <Media src={n.image} alt={n.title} />
             <p className="muted" style={{ whiteSpace: 'pre-line' }}>{n.body}</p>
           </article>
         ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Media from '../components/Media'
 import { listActivities, listCategories } from '../lib/data'
 
 export default function Actividades() {
@@ -22,7 +23,7 @@ export default function Actividades() {
       <div className="grid wide">
         {acts?.map((a) => (
           <article key={a.id} className="panel activity">
-            {a.image && <img className="news-img" src={a.image} alt={a.title} loading="lazy" />}
+            <Media src={a.image} alt={a.title} />
             {a.category && <span className="tag static">{catName(a.category)}</span>}
             <h3>{a.title}</h3>
             <p className="muted">{a.description}</p>

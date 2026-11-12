@@ -2,8 +2,19 @@
 //  - una URL normal (Supabase Storage, Cloudinary, Imgur, etc.)  -> se muestra como foto
 //  - "ig:p/CODIGO" o "ig:reel/CODIGO" (publicación de Instagram)  -> se muestra incrustada (embed oficial)
 export const isIg = (s) => typeof s === 'string' && s.startsWith('ig:')
-export const igEmbedUrl = (s) => `https://www.instagram.com/${s.slice(3)}/embed`
-export const igPostUrl = (s) => `https://www.instagram.com/${s.slice(3)}/`
+// Formato: "ig:p/CODIGO" o "ig:p/CODIGO|4:5" (el sufijo es el encuadre elegido)
+export const RATIOS = [
+  ['4:5', 'Vertical 4:5'], ['1:1', 'Cuadrado 1:1'], ['9:16', 'Reel vertical 9:16'],
+  ['5:4', 'Horizontal 5:4'], ['16:9', 'Panorámico 16:9']
+]
+export const igParts = (s) => {
+  const [path, ratio] = s.slice(3).split('|')
+  return { path, ratio: ratio || (path.startsWith('reel') ? '9:16' : '4:5') }
+}
+export const igEmbedUrl = (s) => `https://www.instagram.com/${igParts(s).path}/embed`
+export const igPostUrl = (s) => `https://www.instagram.com/${igParts(s).path}/`
+export const withRatio = (s, r) => `ig:${igParts(s).path}|${r}`
+export const sameMedia = (a, b) => (isIg(a) && isIg(b) ? igParts(a).path === igParts(b).path : a === b)
 export const photosOf = (images = []) => images.filter((i) => !isIg(i))
 export const igOf = (images = []) => images.filter(isIg)
 export const coverOf = (images = []) => photosOf(images)[0] ?? null
