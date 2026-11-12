@@ -5,6 +5,7 @@ import { useCart } from '../lib/cart'
 import { useSettings } from '../lib/settings'
 import { fmtMoney } from '../lib/format'
 import { Photo } from '../components/ProductCard'
+import { photosOf, igOf, igEmbedUrl, igPostUrl } from '../lib/images'
 
 export default function Producto() {
   const { id } = useParams()
@@ -28,6 +29,8 @@ export default function Producto() {
   if (p === undefined) return <p className="muted center">Cargando…</p>
   if (p === null) return <p className="center">Producto no encontrado. <Link to="/">Volver a la tienda</Link></p>
 
+  const photos = photosOf(p.images)
+  const igs = igOf(p.images)
   const variants = p.variants.filter((v) => v.active)
   const v = variants.find((x) => x.id === sel)
 
@@ -36,10 +39,10 @@ export default function Producto() {
       <Link to="/" className="back">← Tienda</Link>
       <div className="detail-grid">
         <div>
-          <div className="detail-img"><Photo src={p.images[img]} alt={p.name} /></div>
-          {p.images.length > 1 && (
+          <div className="detail-img"><Photo src={photos[img]} alt={p.name} /></div>
+          {photos.length > 1 && (
             <div className="thumbs">
-              {p.images.map((src, i) => (
+              {photos.map((src, i) => (
                 <button key={i} className={i === img ? 'on' : ''} onClick={() => setImg(i)}><img src={src} alt="" /></button>
               ))}
             </div>
@@ -82,6 +85,17 @@ export default function Producto() {
           </div>
           {added && <button className="btn ghost" onClick={() => nav('/carrito')}>Ir al carrito</button>}
 
+          {igs.length > 0 && (
+            <div className="ig-embeds">
+              <h4>Mirá en Instagram</h4>
+              {igs.map((g) => (
+                <div key={g}>
+                  <iframe src={igEmbedUrl(g)} title="Instagram" loading="lazy" allowTransparency="true" scrolling="no" />
+                  <a href={igPostUrl(g)} target="_blank" rel="noreferrer" className="small">Abrir en Instagram ↗</a>
+                </div>
+              ))}
+            </div>
+          )}
           <Link to="/actividades" className="link-box">
             💪 ¿Cómo usar {p.name.toLowerCase()}? Ver ejercicios recomendados →
           </Link>

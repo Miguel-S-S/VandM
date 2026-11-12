@@ -1,3 +1,4 @@
+import { coverOf } from '../lib/images'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listProducts, deleteProduct, resetDemo } from '../lib/data'
@@ -33,7 +34,7 @@ export default function AdminProductos() {
               const prices = p.variants.map((v) => v.price)
               return (
                 <tr key={p.id}>
-                  <td className="thumb-cell"><Photo src={p.images[0]} alt="" /></td>
+                  <td className="thumb-cell"><Photo src={coverOf(p.images)} alt="" /></td>
                   <td><b>{p.name}</b></td>
                   <td>{p.categoryName ?? p.category ?? '—'}</td>
                   <td>{p.variants.length}</td>

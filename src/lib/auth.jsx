@@ -13,8 +13,15 @@ export function AuthProvider({ children }) {
 
   const loadProfile = useCallback(async (u) => {
     if (!u) { setUser(null); setRole('visitante'); return }
-    const { data } = await supabase.from('profiles').select('role, full_name').eq('id', u.id).maybeSingle()
-    setUser({ id: u.id, email: u.email, name: data?.full_name })
+    let { data } = await supabase.from('profiles').select('role, full_name').eq('id', u.id).maybeSingle()
+    let missing = false
+    if (!data) {
+      // usuario sin perfil (p. ej. creado antes de correr el esquema): se crea como cliente
+      missing = true
+      const ins = await supabase.from('profiles').insert({ id: u.id, email: u.email, full_name: u.email?.split('@')[0] })
+      if (!ins.error) missing = false
+    }
+    setUser({ id: u.id, email: u.email, name: data?.full_name, profileMissing: missing })
     setRole(data?.role ?? 'cliente')
   }, [])
 

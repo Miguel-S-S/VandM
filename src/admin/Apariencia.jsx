@@ -36,7 +36,10 @@ export default function Apariencia() {
         <label>WhatsApp (con código de país, sin +)
           <input value={s.whatsapp} onChange={(e) => setTop('whatsapp', e.target.value.replace(/\D/g, ''))} placeholder="5493794123456" inputMode="numeric" />
         </label>
-        <label>Tiempo estimado de entrega<input value={s.deliveryText} onChange={(e) => setTop('deliveryText', e.target.value)} /></label>
+        <label>Tiempo estimado de entrega (texto visible)<input value={s.deliveryText} onChange={(e) => setTop('deliveryText', e.target.value)} /></label>
+        <label>Días para calcular la fecha estimada de cada pedido
+          <input type="number" min="1" max="90" value={s.deliveryDays ?? 7} onChange={(e) => setTop('deliveryDays', Number(e.target.value) || 7)} />
+        </label>
       </div>
 
       <div className="panel form-grid">

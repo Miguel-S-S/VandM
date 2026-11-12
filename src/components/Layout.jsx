@@ -34,6 +34,7 @@ export default function Layout() {
           <NavLink to="/" end>Tienda</NavLink>
           <NavLink to="/actividades">Actividades</NavLink>
           <NavLink to="/noticias">Noticias</NavLink>
+          {(user || demo) && !isStaff && <NavLink to="/mis-pedidos">Mis pedidos</NavLink>}
           {isStaff && <NavLink to="/admin">Panel</NavLink>}
         </nav>
         <div className="header-actions">

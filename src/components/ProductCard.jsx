@@ -1,9 +1,12 @@
+import { useState } from 'react'
+import { coverOf } from '../lib/images'
 import { Link } from 'react-router-dom'
 import { fmtMoney } from '../lib/format'
 
 export function Photo({ src, alt }) {
-  return src
-    ? <img src={src} alt={alt} loading="lazy" className="photo" />
+  const [broken, setBroken] = useState(false)
+  return src && !broken
+    ? <img src={src} alt={alt} loading="lazy" className="photo" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
     : <div className="photo photo-empty"><img src="/logo.jpg" alt="V&M" /></div>
 }
 
@@ -15,7 +18,7 @@ export default function ProductCard({ p }) {
   return (
     <Link to={`/producto/${p.id}`} className="card">
       <div className="card-img">
-        <Photo src={p.images[0]} alt={p.name} />
+        <Photo src={coverOf(p.images)} alt={p.name} />
         {p.featured && <span className="tag">Destacado</span>}
         {soldOut && <span className="tag tag-red">Sin stock</span>}
       </div>

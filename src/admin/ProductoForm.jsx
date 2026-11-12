@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { getProduct, saveProduct, uploadImage, listCategories } from '../lib/data'
 import { weightVariants } from '../lib/demoData'
 import { uid } from '../lib/format'
+import { isIg, parseImageLink } from '../lib/images'
 
 const EMPTY = { name: '', category: '', description: '', images: [], active: true, featured: false, variants: [] }
 
@@ -15,6 +16,7 @@ export default function ProductoForm() {
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [link, setLink] = useState('')
   const fileRef = useRef()
 
   useEffect(() => {
@@ -34,14 +36,26 @@ export default function ProductoForm() {
 
   const onFiles = async (e) => {
     const files = [...e.target.files]
+    e.target.value = ''
     if (!files.length) return
     setUploading(true); setError('')
+    const failed = []
+    // se suben de a una; las que salen bien se agregan aunque otra falle
+    for (const f of files) {
+      try {
+        const url = await uploadImage(f)
+        setP((x) => ({ ...x, images: [...x.images, url] }))
+      } catch (err) { failed.push(`${f.name}: ${err.message}`) }
+    }
+    if (failed.length) setError('No se pudieron subir: ' + failed.join(' · '))
+    setUploading(false)
+  }
+  const addLink = () => {
     try {
-      const urls = []
-      for (const f of files) urls.push(await uploadImage(f))
-      set('images', [...p.images, ...urls])
+      const v = parseImageLink(link)
+      if (p.images.includes(v)) throw new Error('Ese enlace ya está agregado')
+      setP((x) => ({ ...x, images: [...x.images, v] })); setLink(''); setError('')
     } catch (err) { setError(err.message) }
-    setUploading(false); fileRef.current.value = ''
   }
   const moveImg = (i, d) => {
     const a = [...p.images]; const j = i + d
@@ -81,11 +95,20 @@ export default function ProductoForm() {
           </button>
         </div>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onFiles} />
+        <div className="row" style={{ marginTop: '.6rem' }}>
+          <input style={{ flex: 1, minWidth: 200 }} value={link} onChange={(e) => setLink(e.target.value)}
+            placeholder="O pegá un enlace: foto (https://…) o publicación de Instagram (…/p/XXXX)"
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink() } }} />
+          <button type="button" className="btn ghost" onClick={addLink}>Agregar enlace</button>
+        </div>
+        <p className="muted small">Los enlaces no usan espacio de Supabase. Las publicaciones de Instagram se muestran incrustadas en la página del producto (deben ser públicas). La portada de la tienda usa la primera foto que no sea de Instagram.</p>
         {p.images.length === 0 && <p className="muted small">Sin fotos todavía. La primera es la portada. Podés sacarlas con la cámara del celular.</p>}
         <div className="img-list">
           {p.images.map((src, i) => (
-            <div key={src.slice(-30) + i} className="img-item">
-              <img src={src} alt="" />
+            <div key={src + i} className="img-item">
+              {isIg(src)
+                ? <div className="ig-tile"><b>Instagram</b><small>{src.slice(3)}</small></div>
+                : <img src={src} alt="" referrerPolicy="no-referrer" />}
               {i === 0 && <span className="tag">Portada</span>}
               <div className="img-actions">
                 <button type="button" onClick={() => moveImg(i, -1)} disabled={i === 0} aria-label="Mover antes">←</button>
