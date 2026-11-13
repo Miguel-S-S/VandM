@@ -3,15 +3,17 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { getProduct } from '../lib/data'
 import { useCart } from '../lib/cart'
 import { useSettings } from '../lib/settings'
+import { useAuth } from '../lib/auth'
 import { fmtMoney } from '../lib/format'
 import { Photo } from '../components/ProductCard'
-import { photosOf, igOf, igPostUrl } from '../lib/images'
-import { IgFrame } from '../components/Media'
+import { photosOf, igOf, ytOf, igPostUrl } from '../lib/images'
+import { IgFrame, YtFrame } from '../components/Media'
 
 export default function Producto() {
   const { id } = useParams()
   const nav = useNavigate()
   const { add } = useCart()
+  const { user } = useAuth()
   const { settings } = useSettings()
   const [p, setP] = useState(undefined)
   const [sel, setSel] = useState(null)
@@ -32,6 +34,7 @@ export default function Producto() {
 
   const photos = photosOf(p.images)
   const igs = igOf(p.images)
+  const yts = ytOf(p.images)
   const variants = p.variants.filter((v) => v.active)
   const v = variants.find((x) => x.id === sel)
 
@@ -79,13 +82,25 @@ export default function Producto() {
               <span>{qty}</span>
               <button onClick={() => setQty((q) => Math.min(v?.stock ?? 1, q + 1))}>+</button>
             </div>
-            <button className="btn" disabled={!v || v.stock <= 0}
-              onClick={() => { add(p, v, qty); setAdded(true); setTimeout(() => setAdded(false), 1800) }}>
-              {added ? '¡Agregado ✓' : 'Agregar al carrito'}
-            </button>
+            {user ? (
+              <button className="btn" disabled={!v || v.stock <= 0}
+                onClick={() => { add(p, v, qty); setAdded(true); setTimeout(() => setAdded(false), 1800) }}>
+                {added ? '¡Agregado ✓' : 'Agregar al carrito'}
+              </button>
+            ) : (
+              <button className="btn" onClick={() => nav(`/ingresar?next=${encodeURIComponent('/producto/' + p.id)}`)}>
+                Ingresá para comprar
+              </button>
+            )}
           </div>
           {added && <button className="btn ghost" onClick={() => nav('/carrito')}>Ir al carrito</button>}
 
+          {yts.length > 0 && (
+            <div className="ig-embeds">
+              <h4>Videos</h4>
+              {yts.map((g) => <div key={g} className="ig-item"><YtFrame src={g} /></div>)}
+            </div>
+          )}
           {igs.length > 0 && (
             <div className="ig-embeds">
               <h4>Mirá en Instagram</h4>

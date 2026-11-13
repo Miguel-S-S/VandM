@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { uploadImage } from '../lib/data'
-import { isIg, parseImageLink, igParts, withRatio, RATIOS } from '../lib/images'
+import { isIg, isYt, ytThumb, parseImageLink, igParts, withRatio, RATIOS } from '../lib/images'
 import { IgFrame } from './Media'
 
 // Una sola imagen (opcional): subir foto, o pegar un enlace (foto o publicación de Instagram)
@@ -27,7 +27,10 @@ export default function ImageField({ value, onChange, label = 'Imagen' }) {
         <div className="row" style={{ margin: '.4rem 0', alignItems: 'flex-start' }}>
           {isIg(value)
             ? <IgFrame src={value} mini width={160} />
-            : <img src={value} alt="" referrerPolicy="no-referrer" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 10 }} />}
+            : <div style={{ position: 'relative' }}>
+                <img src={isYt(value) ? ytThumb(value) : value} alt="" referrerPolicy="no-referrer" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 10 }} />
+                {isYt(value) && <span className="tag">▶ YouTube</span>}
+              </div>}
           <div style={{ display: 'grid', gap: '.4rem' }}>
             {isIg(value) && (
               <label>Encuadre
@@ -45,7 +48,7 @@ export default function ImageField({ value, onChange, label = 'Imagen' }) {
           {busy ? 'Subiendo…' : value ? 'Cambiar foto' : '+ Subir foto'}
         </button>
         <input style={{ flex: 1, minWidth: 180 }} value={link} onChange={(e) => setLink(e.target.value)}
-          placeholder="…o pegá un enlace (foto o publicación de Instagram)"
+          placeholder="…o pegá un enlace (foto, Instagram o YouTube)"
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink() } }} />
         <button type="button" className="btn ghost" onClick={addLink}>Usar enlace</button>
       </div>

@@ -339,8 +339,9 @@ export async function createOrder({ name, phone, notes, items }) {
     write(LS.orders, [order, ...orders])
     return order
   }
+  // el servidor toma nombre y teléfono del perfil verificado (no se pueden falsificar desde el cliente)
   const { data, error } = await supabase.rpc('create_order', {
-    p_name: name, p_phone: phone, p_notes: notes || '',
+    p_notes: notes || '',
     p_items: items.map((i) => ({ variant_id: i.variantId, qty: i.qty }))
   })
   if (error) throw new Error(error.message)
@@ -387,4 +388,44 @@ export async function updateOrder(id, patch) {
   if ('staffNotes' in patch) row.staff_notes = patch.staffNotes
   const { error } = await supabase.from('orders').update(row).eq('id', id)
   if (error) throw error
+}
+
+
+/* ---------------- Verificación de teléfono ---------------- */
+export async function requestPhoneCode() {
+  if (!hasSupabase) return 'verified'
+  const { data, error } = await supabase.rpc('request_phone_code')
+  if (error) throw new Error(error.message)
+  return data
+}
+
+// devuelve: ok | bad | locked | expired | none
+export async function confirmPhoneCode(code) {
+  if (!hasSupabase) return 'ok'
+  const { data, error } = await supabase.rpc('confirm_phone_code', { p_code: code })
+  if (error) throw new Error(error.message)
+  return data
+}
+
+// staff: pedidos de código pendientes
+export async function listPhoneRequests() {
+  if (!hasSupabase) return []
+  const { data, error } = await supabase.from('phone_codes')
+    .select('id, code, phone, sent, created_at, expires_at, user_id, profile:profiles(full_name, phone_verified)')
+    .eq('used', false).order('created_at', { ascending: false })
+  if (error) throw error
+  return data.filter((r) => new Date(r.expires_at) > new Date())
+}
+export async function markCodeSent(id) {
+  const { error } = await supabase.from('phone_codes').update({ sent: true }).eq('id', id)
+  if (error) throw error
+}
+export async function discardCode(id) {
+  const { error } = await supabase.from('phone_codes').update({ used: true }).eq('id', id)
+  if (error) throw error
+}
+export async function verifyUserManually(userId, codeId) {
+  const { error } = await supabase.from('profiles').update({ phone_verified: true }).eq('id', userId)
+  if (error) throw error
+  if (codeId) await discardCode(codeId)
 }

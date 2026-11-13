@@ -13,10 +13,9 @@ export const ACTIVE_STATUSES = ['recibido', 'confirmado', 'cosiendo', 'cargando_
 export const fmtDay = (d) => (d ? new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')
 export const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10) }
 
-// Número para wa.me: solo dígitos; si parece número argentino local sin código, agrega 549
+// Número para wa.me: normalizado si es válido, si no solo dígitos
+import { normalizePhone } from './phone'
 export function waNumber(phone) {
-  let d = String(phone).replace(/\D/g, '').replace(/^0+/, '')
-  if (d.startsWith('54')) return d
-  if (d.length >= 10 && d.length <= 11) { d = d.replace(/^(\d{2,4})15/, '$1'); return '549' + d }
-  return d
+  const n = normalizePhone(phone)
+  return n.ok ? n.value : String(phone).replace(/\D/g, '')
 }

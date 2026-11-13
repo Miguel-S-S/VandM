@@ -1,15 +1,19 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth, ROLES } from '../lib/auth'
-import { listOrders } from '../lib/data'
+import { listOrders, listPhoneRequests } from '../lib/data'
 
 export default function AdminLayout() {
   const { isStaff, role, loading, user } = useAuth()
   const [newCount, setNewCount] = useState(0)
+  const [codeCount, setCodeCount] = useState(0)
   // avisa cuántos pedidos nuevos (sin atender) hay; se actualiza cada minuto
   useEffect(() => {
     if (!isStaff) return undefined
-    const tick = () => listOrders().then((o) => setNewCount(o.filter((x) => x.status === 'recibido').length)).catch(() => {})
+    const tick = () => {
+      listOrders().then((o) => setNewCount(o.filter((x) => x.status === 'recibido').length)).catch(() => {})
+      listPhoneRequests().then((r) => setCodeCount(r.filter((x) => !x.sent).length)).catch(() => {})
+    }
     tick()
     const t = setInterval(tick, 60000)
     return () => clearInterval(t)
@@ -41,6 +45,7 @@ export default function AdminLayout() {
         <nav className="tabs">
           <NavLink to="/admin/pedidos">Pedidos{newCount > 0 && <b className="badge-inline">{newCount}</b>}</NavLink>
           <NavLink to="/admin/calendario">Calendario</NavLink>
+          <NavLink to="/admin/verificaciones">Verificaciones{codeCount > 0 && <b className="badge-inline">{codeCount}</b>}</NavLink>
           <NavLink to="/admin/productos">Productos</NavLink>
           <NavLink to="/admin/categorias">Categorías</NavLink>
           <NavLink to="/admin/actividades">Actividades</NavLink>

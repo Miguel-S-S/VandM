@@ -1,4 +1,4 @@
-import { isIg, igParts, igEmbedUrl } from '../lib/images'
+import { isIg, isYt, igParts, igEmbedUrl, ytParts, ytEmbedUrl } from '../lib/images'
 
 // Alto (px) de la cabecera del visor de Instagram que se recorta. Si Instagram cambia su diseño, ajustá este valor.
 const IG_HEADER = 54
@@ -31,9 +31,21 @@ export function IgFrame({ src, mini = false, width = 200 }) {
   )
 }
 
-// Foto normal o publicación de Instagram, según lo que esté guardado
+// Video de YouTube en un marco con la proporción del video
+export function YtFrame({ src }) {
+  const [w, h] = ytParts(src).ratio.split(':').map(Number)
+  return (
+    <div className="yt-frame" style={{ aspectRatio: `${w} / ${h}`, maxWidth: w < h ? 320 : undefined }}>
+      <iframe src={ytEmbedUrl(src)} title="YouTube" loading="lazy" allowFullScreen
+        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }} />
+    </div>
+  )
+}
+
+// Foto, publicación de Instagram o video de YouTube, según lo que esté guardado
 export default function Media({ src, alt = '', className = 'news-img' }) {
   if (!src) return null
   if (isIg(src)) return <div className="media-ig"><IgFrame src={src} /></div>
+  if (isYt(src)) return <div className="media-ig"><YtFrame src={src} /></div>
   return <img className={className} src={src} alt={alt} loading="lazy" referrerPolicy="no-referrer" />
 }

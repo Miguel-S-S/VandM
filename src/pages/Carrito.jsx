@@ -5,19 +5,17 @@ import { useSettings } from '../lib/settings'
 import { useAuth } from '../lib/auth'
 import { createOrder } from '../lib/data'
 import { fmtMoney } from '../lib/format'
+import { normalizePhone } from '../lib/phone'
 import { Photo } from '../components/ProductCard'
 
 export default function Carrito() {
   const { items, setQty, remove, clear, total } = useCart()
   const { settings } = useSettings()
-  const { user } = useAuth()
+  const { user, isVerified } = useAuth()
   const nav = useNavigate()
-  const [f, setF] = useState(() => ({
-    name: localStorage.getItem('vm_cust_name') || '', phone: localStorage.getItem('vm_cust_phone') || '', notes: ''
-  }))
+  const [notes, setNotes] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
 
   if (!items.length) {
     return (
@@ -30,10 +28,12 @@ export default function Carrito() {
   }
 
   const submit = async (e) => {
-    e.preventDefault(); setBusy(true); setError('')
+    e.preventDefault()
+    if (!user) return nav('/ingresar?next=/carrito')
+    if (!isVerified) return nav('/verificar?next=/carrito')
+    setBusy(true); setError('')
     try {
-      const order = await createOrder({ name: f.name, phone: f.phone, notes: f.notes, items })
-      localStorage.setItem('vm_cust_name', f.name); localStorage.setItem('vm_cust_phone', f.phone)
+      const order = await createOrder({ name: user.name, phone: user.phone, notes: notes.trim(), items })
       clear()
       nav('/pedido-confirmado', { state: { order }, replace: true })
     } catch (err) { setError(err.message); setBusy(false) }
@@ -66,11 +66,16 @@ export default function Carrito() {
       <form className="summary" onSubmit={submit}>
         <div className="row between"><span>Total</span><b className="price big">{fmtMoney(total)}</b></div>
         <p className="muted small">🚚 {settings.deliveryText}</p>
-        <label>Nombre y apellido<input value={f.name} onChange={set('name')} required autoComplete="name" /></label>
-        <label>Teléfono / WhatsApp<input value={f.phone} onChange={set('phone')} required inputMode="tel" autoComplete="tel" placeholder="Ej: 3794 123456" /></label>
-        <label>Aclaraciones (opcional)<textarea rows={2} value={f.notes} onChange={set('notes')} placeholder="Color, forma de entrega, etc." /></label>
+        {!user && <p className="alert">Para confirmar el pedido tenés que ingresar a tu cuenta.</p>}
+        {user && !isVerified && <p className="alert">Falta verificar tu número de teléfono para poder comprar.</p>}
+        {user && (
+          <p className="small">Pedido a nombre de <b>{user.name}</b>{user.phone && <> · WhatsApp {normalizePhone(user.phone).pretty ?? user.phone}</>}</p>
+        )}
+        <label>Aclaraciones (opcional)<textarea rows={2} maxLength={300} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Color, forma de entrega, etc." /></label>
         {error && <p className="alert">{error}</p>}
-        <button className="btn" disabled={busy}>{busy ? 'Enviando…' : 'Confirmar pedido'}</button>
+        <button className="btn" disabled={busy}>
+          {busy ? 'Enviando…' : !user ? 'Ingresar para confirmar' : !isVerified ? 'Verificar mi número' : 'Confirmar pedido'}
+        </button>
         <p className="muted small">Al confirmar se registra tu pedido y te damos el número para avisarnos por WhatsApp. El pago se coordina con nosotros.</p>
         <button type="button" className="link danger" onClick={clear}>Vaciar carrito</button>
       </form>

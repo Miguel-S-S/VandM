@@ -8,6 +8,8 @@ import Noticias from './pages/Noticias'
 import Login from './pages/Login'
 import PedidoConfirmado from './pages/PedidoConfirmado'
 import MisPedidos from './pages/MisPedidos'
+import Verificar from './pages/Verificar'
+import AdminVerificaciones from './admin/AdminVerificaciones'
 import AdminPedidos from './admin/AdminPedidos'
 import AdminCalendario from './admin/AdminCalendario'
 import AdminLayout from './admin/AdminLayout'
@@ -27,6 +29,7 @@ export default function App() {
         <Route path="producto/:id" element={<Producto />} />
         <Route path="carrito" element={<Carrito />} />
         <Route path="pedido-confirmado" element={<PedidoConfirmado />} />
+        <Route path="verificar" element={<Verificar />} />
         <Route path="mis-pedidos" element={<MisPedidos />} />
         <Route path="actividades" element={<Actividades />} />
         <Route path="noticias" element={<Noticias />} />
@@ -34,6 +37,7 @@ export default function App() {
         <Route path="admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="pedidos" replace />} />
           <Route path="pedidos" element={<AdminPedidos />} />
+          <Route path="verificaciones" element={<AdminVerificaciones />} />
           <Route path="calendario" element={<AdminCalendario />} />
           <Route path="productos" element={<AdminProductos />} />
           <Route path="productos/nuevo" element={<ProductoForm />} />

@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { coverOf, isIg } from '../lib/images'
+import { coverOf, isIg, isYt, ytThumb } from '../lib/images'
 import { Link } from 'react-router-dom'
 import { fmtMoney } from '../lib/format'
 
 export function Photo({ src, alt }) {
   const [broken, setBroken] = useState(false)
-  return src && !isIg(src) && !broken
-    ? <img src={src} alt={alt} loading="lazy" className="photo" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+  const real = isYt(src) ? ytThumb(src) : src
+  return real && !isIg(real) && !broken
+    ? <img src={real} alt={alt} loading="lazy" className="photo" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
     : <div className="photo photo-empty"><img src="/logo.jpg" alt="V&M" /></div>
 }
 

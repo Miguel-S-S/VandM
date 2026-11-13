@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { getProduct, saveProduct, uploadImage, listCategories } from '../lib/data'
 import { weightVariants } from '../lib/demoData'
 import { uid } from '../lib/format'
-import { isIg, parseImageLink, sameMedia, igParts, withRatio, RATIOS } from '../lib/images'
+import { isIg, isYt, ytThumb, parseImageLink, sameMedia, igParts, withRatio, RATIOS } from '../lib/images'
 import { IgFrame } from '../components/Media'
 
 const EMPTY = { name: '', category: '', description: '', images: [], active: true, featured: false, variants: [] }
@@ -98,11 +98,11 @@ export default function ProductoForm() {
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onFiles} />
         <div className="row" style={{ marginTop: '.6rem' }}>
           <input style={{ flex: 1, minWidth: 200 }} value={link} onChange={(e) => setLink(e.target.value)}
-            placeholder="O pegá un enlace: foto (https://…) o publicación de Instagram (…/p/XXXX)"
+            placeholder="O pegá un enlace: foto (https://…), publicación de Instagram o video de YouTube"
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink() } }} />
           <button type="button" className="btn ghost" onClick={addLink}>Agregar enlace</button>
         </div>
-        <p className="muted small">Los enlaces no usan espacio de Supabase. Las publicaciones de Instagram (deben ser públicas) se muestran en la página del producto recortadas a un marco; elegí el encuadre que mejor calce. La portada de la tienda usa la primera foto que no sea de Instagram.</p>
+        <p className="muted small">Los enlaces no usan espacio de Supabase. Las publicaciones de Instagram (deben ser públicas) se muestran en la página del producto recortadas a un marco; elegí el encuadre que mejor calce. Los videos de YouTube se reproducen en la página del producto. La portada de la tienda usa la primera foto (o, si no hay, la miniatura del video).</p>
         {p.images.length === 0 && <p className="muted small">Sin fotos todavía. La primera es la portada. Podés sacarlas con la cámara del celular.</p>}
         <div className="img-list">
           {p.images.map((src, i) => (
@@ -115,8 +115,10 @@ export default function ProductoForm() {
                       {RATIOS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                     </select>
                   </>
-                : <img src={src} alt="" referrerPolicy="no-referrer" />}
-              {!isIg(src) && p.images.findIndex((x) => !isIg(x)) === i && <span className="tag">Portada</span>}
+                : isYt(src)
+                  ? <><img src={ytThumb(src)} alt="" referrerPolicy="no-referrer" /><span className="tag">▶ YouTube</span></>
+                  : <img src={src} alt="" referrerPolicy="no-referrer" />}
+              {!isIg(src) && !isYt(src) && p.images.findIndex((x) => !isIg(x) && !isYt(x)) === i && <span className="tag">Portada</span>}
               <div className="img-actions">
                 <button type="button" onClick={() => moveImg(i, -1)} disabled={i === 0} aria-label="Mover antes">←</button>
                 <button type="button" onClick={() => moveImg(i, 1)} disabled={i === p.images.length - 1} aria-label="Mover después">→</button>
