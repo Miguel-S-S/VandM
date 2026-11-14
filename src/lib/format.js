@@ -4,3 +4,7 @@ export const fmtDate = (d) =>
   new Date(d).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
 export const uid = () =>
   (crypto.randomUUID && crypto.randomUUID()) || 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2)
+export const fmtNum = (n, dec = 2) =>
+  new Intl.NumberFormat('es-AR', { maximumFractionDigits: dec }).format(Number(n) || 0)
+export const fmtPct = (n) => (n == null ? '—' : `${n > 0 ? '+' : ''}${n.toFixed(1)}%`)
+export const fmtDay = (d) => (d ? new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('es-AR') : '—')

@@ -1,16 +1,19 @@
-import { NavLink, Link, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useCart } from '../lib/cart'
 import { useAuth, ROLES } from '../lib/auth'
 import { useSettings } from '../lib/settings'
 import Socials from './Socials'
+import { useVisits } from '../lib/visits'
 
 export default function Layout() {
   const { count } = useCart()
   const { role, isStaff, signOut, demo, setDemoRole, user } = useAuth()
   const { settings } = useSettings()
   const { pathname } = useLocation()
+  const nav = useNavigate()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  useVisits(pathname, isStaff)
 
   return (
     <div className="app">
@@ -34,15 +37,15 @@ export default function Layout() {
           <NavLink to="/" end>Tienda</NavLink>
           <NavLink to="/actividades">Actividades</NavLink>
           <NavLink to="/noticias">Noticias</NavLink>
-          {(user || demo) && !isStaff && <NavLink to="/mis-pedidos">Mis pedidos</NavLink>}
+          {user && !isStaff && <NavLink to="/mis-pedidos">Mis pedidos</NavLink>}
           {isStaff && <NavLink to="/admin">Panel</NavLink>}
         </nav>
         <div className="header-actions">
           <Link to="/carrito" className="cart-btn" aria-label="Carrito">
             🛒{count > 0 && <b className="badge">{count}</b>}
           </Link>
-          {user || (demo && role !== 'visitante')
-            ? <button className="link" onClick={signOut}>Salir</button>
+          {user
+            ? <button className="link" onClick={async () => { await signOut(); nav('/') }}>Salir</button>
             : !demo && <Link to="/ingresar" className="link">Ingresar</Link>}
         </div>
       </header>

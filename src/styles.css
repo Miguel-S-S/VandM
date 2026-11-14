@@ -187,3 +187,22 @@ small.danger { color: var(--danger); }
 
 .yt-frame { position: relative; width: 100%; max-width: 560px; overflow: hidden; border-radius: var(--radius); background: #000; border: 1px solid var(--border); }
 .img-item .tag { left: .3rem; top: .3rem; }
+
+/* ---- Etapa 5: insumos, proveedores, compras, auditoría ---- */
+.admin-head { display: grid; gap: .5rem; }
+.admin-head h1 { margin-bottom: .2rem; }
+.tabs-label { align-self: center; color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; padding: 0 .5rem 0 .75rem; white-space: nowrap; }
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin: 1rem 0; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem 1rem; display: grid; gap: .2rem; }
+.stat span { color: var(--muted); font-size: .8rem; }
+.stat b { font-size: 1.4rem; }
+.stat.warn { border-color: var(--danger); } .stat.warn b { color: var(--danger); }
+td.low { color: var(--danger); font-weight: 600; }
+.matrix td.best { background: rgba(74, 222, 128, .14); font-weight: 600; }
+.vtable select, .vtable input { width: 100%; min-width: 90px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .8rem; margin: 1rem 0; }
+.form-grid .full { grid-column: 1 / -1; }
+.table td.actions { white-space: nowrap; }
+.line { margin-bottom: .7rem; }
+.check { display: flex; align-items: center; gap: .5rem; }
+.check input { width: auto; }

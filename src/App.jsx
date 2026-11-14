@@ -20,6 +20,11 @@ import Auditoria from './admin/Auditoria'
 import AdminCategorias from './admin/AdminCategorias'
 import AdminActividades from './admin/AdminActividades'
 import AdminNoticias from './admin/AdminNoticias'
+import AdminInsumos from './admin/AdminInsumos'
+import AdminProveedores from './admin/AdminProveedores'
+import AdminCompras from './admin/AdminCompras'
+import AdminCostos from './admin/AdminCostos'
+import SoloDuena from './admin/SoloDuena'
 
 export default function App() {
   return (
@@ -46,7 +51,11 @@ export default function App() {
           <Route path="actividades" element={<AdminActividades />} />
           <Route path="noticias" element={<AdminNoticias />} />
           <Route path="apariencia" element={<Apariencia />} />
-          <Route path="auditoria" element={<Auditoria />} />
+          <Route path="insumos" element={<SoloDuena><AdminInsumos /></SoloDuena>} />
+        <Route path="proveedores" element={<SoloDuena><AdminProveedores /></SoloDuena>} />
+        <Route path="compras" element={<SoloDuena><AdminCompras /></SoloDuena>} />
+        <Route path="costos" element={<SoloDuena><AdminCostos /></SoloDuena>} />
+        <Route path="auditoria" element={<Auditoria />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
