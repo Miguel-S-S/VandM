@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { listActivities, saveActivity, deleteActivity, listCategories, listProducts } from '../lib/data'
 import ImageField from '../components/ImageField'
 import { Photo } from '../components/ProductCard'
+import { useConfirm } from '../components/Confirm'
 
 const EMPTY = { title: '', description: '', category: '', productId: '', level: 'Principiante', minutes: '', recommend: '', image: '', published: true, position: 0 }
 const LEVELS = ['Principiante', 'Intermedio', 'Avanzado']
 
 export default function AdminActividades() {
+  const ask = useConfirm()
   const [list, setList] = useState(null)
   const [cats, setCats] = useState([])
   const [products, setProducts] = useState([])
@@ -18,12 +20,14 @@ export default function AdminActividades() {
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
 
   const submit = async (e) => {
-    e.preventDefault(); setBusy(true); setError('')
+    e.preventDefault(); setError('')
+    if (!(await ask.save(`la actividad «${f.title.trim()}»`, !f.id))) return
+    setBusy(true)
     try { await saveActivity(f); setF(null); await load() } catch (err) { setError(err.message) }
     setBusy(false)
   }
   const del = async (a) => {
-    if (!confirm(`¿Eliminar "${a.title}"?`)) return
+    if (!(await ask.remove(`la actividad «${a.title}»`))) return
     try { await deleteActivity(a.id); load() } catch (e) { setError(e.message) }
   }
 
@@ -65,7 +69,7 @@ export default function AdminActividades() {
   return (
     <>
       <div className="row between"><h2>Actividades</h2><button className="btn" onClick={() => setF({ ...EMPTY, category: cats[0]?.slug ?? '' })}>+ Nueva</button></div>
-      <p className="muted small">Cada actividad enlaza con su categoría (o producto) en la tienda.</p>
+      <p className="muted small">Cada actividad enlaza con su categoría (o producto) en la tienda. Si elegís un <b>producto específico</b>, al entrar a ese producto el cliente verá estos ejercicios; si solo elegís la categoría, se muestra en todos los productos de esa categoría.</p>
       {error && <p className="alert">{error}</p>}
       <div className="item-list">
         {list?.map((a) => (

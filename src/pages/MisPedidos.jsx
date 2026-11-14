@@ -3,17 +3,19 @@ import { Link } from 'react-router-dom'
 import { listOrders } from '../lib/data'
 import { useAuth } from '../lib/auth'
 import { fmtMoney } from '../lib/format'
-import { statusOf, STATUSES, fmtDay } from '../lib/orders'
+import { fmtDay } from '../lib/orders'
+import { useStatuses } from '../lib/statuses'
 
 export function StatusBadge({ status }) {
+  const { statusOf } = useStatuses()
   const s = statusOf(status)
   return <span className="pill" style={{ background: s.color + '33', color: s.color }}>{s.label}</span>
 }
 
 // Barra de avance del pedido
 export function Progress({ status }) {
+  const { steps } = useStatuses()
   if (status === 'cancelado') return null
-  const steps = STATUSES.filter((s) => s.key !== 'cancelado')
   const idx = steps.findIndex((s) => s.key === status)
   return (
     <ol className="progress">

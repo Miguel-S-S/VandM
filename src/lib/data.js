@@ -51,6 +51,13 @@ export async function deleteCategory(c) {
 }
 
 /* ---------------- Productos ---------------- */
+const normVariant = (v) => ({
+  ...v,
+  price: Number(v.price),
+  listPrice: v.list_price != null ? Number(v.list_price) : (v.listPrice ?? null),
+  promoLabel: v.promo_label ?? v.promoLabel ?? '',
+  promoEnds: v.promo_ends ?? v.promoEnds ?? ''
+})
 const normalize = (row) => ({
   id: row.id,
   category: row.category?.slug ?? null,
@@ -60,8 +67,18 @@ const normalize = (row) => ({
   images: row.images ?? [],
   active: row.active,
   featured: row.featured,
-  variants: (row.variants ?? []).slice().sort(byWeight)
+  isCombo: Boolean(row.is_combo),
+  comboItems: row.combo_items ?? [],
+  variants: (row.variants ?? []).map(normVariant).sort(byWeight)
 })
+
+// Cierra las promociones vencidas (el precio vuelve al normal). Se hace como máximo cada 5 minutos.
+let lastSweep = 0
+async function sweepPromos() {
+  if (!hasSupabase || Date.now() - lastSweep < 300000) return
+  lastSweep = Date.now()
+  await supabase.rpc('end_expired_promos') // si la función todavía no existe, no pasa nada
+}
 
 export async function listProducts() {
   if (!hasSupabase) {
@@ -69,6 +86,7 @@ export async function listProducts() {
     if (!p) { p = DEMO_PRODUCTS(); write(LS.products, p) }
     return p
   }
+  await sweepPromos()
   const { data, error } = await supabase
     .from('products')
     .select('*, category:categories(slug,name), variants:product_variants(*)')
@@ -90,7 +108,11 @@ export async function saveProduct(prod) {
     weight_kg: v.weight_kg === '' ? null : Number(v.weight_kg),
     price: Number(v.price) || 0,
     stock: parseInt(v.stock, 10) || 0,
-    active: v.active !== false
+    active: v.active !== false,
+    // promoción: `price` es lo que se cobra y `listPrice` el precio normal (tachado)
+    listPrice: v.listPrice != null && v.listPrice !== '' ? Number(v.listPrice) : null,
+    promoLabel: v.promoLabel ?? '',
+    promoEnds: v.promoEnds || ''
   }))
 
   if (!hasSupabase) {
@@ -120,7 +142,8 @@ export async function saveProduct(prod) {
   const category_id = cats.find((c) => c.slug === prod.category)?.id ?? null
   const { error: e1 } = await supabase.from('products').upsert({
     id, category_id, name: prod.name, description: prod.description,
-    images: prod.images, active: prod.active, featured: prod.featured
+    images: prod.images, active: prod.active, featured: prod.featured,
+    is_combo: Boolean(prod.isCombo), combo_items: prod.isCombo ? (prod.comboItems ?? []) : []
   })
   if (e1) throw e1
 
@@ -133,7 +156,11 @@ export async function saveProduct(prod) {
     if (error) throw error
   }
   if (variants.length) {
-    const { error } = await supabase.from('product_variants').upsert(variants.map((v) => ({ ...v, product_id: id })))
+    const rows = variants.map((v) => ({
+      id: v.id, product_id: id, label: v.label, weight_kg: v.weight_kg, price: v.price, stock: v.stock, active: v.active,
+      list_price: v.listPrice, promo_label: v.promoLabel, promo_ends: v.promoEnds || null
+    }))
+    const { error } = await supabase.from('product_variants').upsert(rows)
     if (error) throw error
   }
   return id

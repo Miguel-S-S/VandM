@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listMaterials, saveMaterial, deleteMaterial, adjustStock, listMovements, listPrices, listSuppliers, priceMatrix } from '../lib/insumos'
 import { fmtMoney, fmtNum, fmtDate, fmtPct } from '../lib/format'
+import { useConfirm } from '../components/Confirm'
 
 const UNITS = [['kg', 'kg'], ['g', 'g'], ['m', 'm (metros)'], ['cm', 'cm'], ['u', 'unidades'], ['l', 'litros']]
 const CATS = ['arena', 'tela', 'hilo', 'cierre', 'relleno', 'embalaje', 'otro']
@@ -8,6 +9,7 @@ const KINDS = { compra: 'Compra', ajuste: 'Ajuste', merma: 'Merma', inventario: 
 const EMPTY = { name: '', category: 'otro', unit: 'u', min_stock: 0, width_cm: '', waste_pct: 0 }
 
 export default function AdminInsumos() {
+  const ask = useConfirm()
   const [mats, setMats] = useState(null)
   const [prices, setPrices] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -41,17 +43,27 @@ export default function AdminInsumos() {
     setError(''); setInfo('')
     try { await fn(); await load(); if (msg) setInfo(msg) } catch (e) { setError(e.message) }
   }
+  const submitMaterial = async (e) => {
+    e.preventDefault()
+    const before = form.id ? mats.find((m) => m.id === form.id) : null
+    const lines = before ? [['name', 'Nombre'], ['category', 'Categoría'], ['unit', 'Unidad'], ['min_stock', 'Stock mínimo'], ['width_cm', 'Ancho'], ['waste_pct', 'Merma %']]
+      .filter(([k]) => String(before[k] ?? '') !== String(form[k] ?? '')).map(([k, l]) => `${l}: ${before[k] ?? '—'} → ${form[k] === '' ? '—' : form[k]}`) : undefined
+    if (before && !lines.length) { setForm(null); return }
+    if (!(await ask.save(`el insumo «${form.name.trim()}»`, !form.id, lines))) return
+    run(async () => { await saveMaterial(form); setForm(null) }, 'Guardado')
+  }
   const openHist = async (m) => {
     setHist(m); setMoves([])
     try { setMoves(await listMovements(m.id)) } catch (e) { setError(e.message) }
   }
-  const doAdjust = (e) => {
+  const doAdjust = async (e) => {
     e.preventDefault()
     const q = Number(adj.qty)
     if (!Number.isFinite(q) || adj.qty === '') return setError('Ingresá una cantidad')
     const m = adj.m
     const delta = adj.kind === 'inventario' ? q - Number(m.stock) : adj.kind === 'merma' ? -Math.abs(q) : q
     if (delta === 0) return setError('No hay diferencia para registrar')
+    if (!(await ask.custom({ title: 'Confirmar modificación', message: `¿Ajustar el stock de «${m.name}»?`, lines: [`${fmtNum(m.stock, 3)} → ${fmtNum(Number(m.stock) + delta, 3)} ${m.unit} (${delta > 0 ? '+' : ''}${fmtNum(delta, 3)})`], confirmText: 'Sí, ajustar' }))) return
     run(async () => { await adjustStock({ materialId: m.id, delta, kind: adj.kind, note: adj.note }); setAdj(null) }, 'Stock actualizado')
   }
 
@@ -69,7 +81,7 @@ export default function AdminInsumos() {
       </div>
 
       {form && (
-        <form className="panel form-grid" onSubmit={(e) => { e.preventDefault(); run(async () => { await saveMaterial(form); setForm(null) }, 'Guardado') }}>
+        <form className="panel form-grid" onSubmit={submitMaterial}>
           <h3 className="full">{form.id ? 'Editar insumo' : 'Nuevo insumo'}</h3>
           <label>Nombre<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
           <label>Categoría
@@ -127,7 +139,7 @@ export default function AdminInsumos() {
                     <button className="link" onClick={() => setAdj({ m, kind: 'inventario', qty: '', note: '' })}>Ajustar</button>
                     <button className="link" onClick={() => openHist(m)}>Historial</button>
                     <button className="link" onClick={() => setForm({ ...m })}>Editar</button>
-                    <button className="link danger" onClick={() => confirm(`¿Eliminar “${m.name}”?`) && run(() => deleteMaterial(m.id))}>Eliminar</button>
+                    <button className="link danger" onClick={async () => (await ask.remove(`el insumo «${m.name}»`)) && run(() => deleteMaterial(m.id), 'Insumo eliminado')}>Eliminar</button>
                   </td>
                 </tr>
               )

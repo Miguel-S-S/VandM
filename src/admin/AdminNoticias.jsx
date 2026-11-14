@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { listNews, saveNews, deleteNews } from '../lib/data'
 import ImageField from '../components/ImageField'
 import { Photo } from '../components/ProductCard'
+import { useConfirm } from '../components/Confirm'
 
 const EMPTY = { title: '', body: '', tag: 'Evento', date: '', image: '', published: true }
 const TAGS = ['Evento', 'Noticia', 'Competencia', 'Promoción']
 
 export default function AdminNoticias() {
+  const ask = useConfirm()
   const [list, setList] = useState(null)
   const [f, setF] = useState(null)
   const [error, setError] = useState('')
@@ -16,12 +18,14 @@ export default function AdminNoticias() {
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
 
   const submit = async (e) => {
-    e.preventDefault(); setBusy(true); setError('')
+    e.preventDefault(); setError('')
+    if (!(await ask.save(`la noticia «${f.title.trim()}»`, !f.id))) return
+    setBusy(true)
     try { await saveNews(f); setF(null); await load() } catch (err) { setError(err.message) }
     setBusy(false)
   }
   const del = async (n) => {
-    if (!confirm(`¿Eliminar "${n.title}"?`)) return
+    if (!(await ask.remove(`la noticia «${n.title}»`))) return
     try { await deleteNews(n.id); load() } catch (e) { setError(e.message) }
   }
 

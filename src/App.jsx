@@ -24,6 +24,7 @@ import AdminInsumos from './admin/AdminInsumos'
 import AdminProveedores from './admin/AdminProveedores'
 import AdminCompras from './admin/AdminCompras'
 import AdminCostos from './admin/AdminCostos'
+import AdminEstados from './admin/AdminEstados'
 import SoloDuena from './admin/SoloDuena'
 
 export default function App() {
@@ -43,6 +44,7 @@ export default function App() {
           <Route index element={<Navigate to="pedidos" replace />} />
           <Route path="pedidos" element={<AdminPedidos />} />
           <Route path="verificaciones" element={<AdminVerificaciones />} />
+          <Route path="estados" element={<AdminEstados />} />
           <Route path="calendario" element={<AdminCalendario />} />
           <Route path="productos" element={<AdminProductos />} />
           <Route path="productos/nuevo" element={<ProductoForm />} />

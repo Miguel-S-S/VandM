@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { coverOf } from './images'
 import { useAuth } from './auth'
+import { onPromo } from './pricing'
 
 const CartCtx = createContext(null)
 export const useCart = () => useContext(CartCtx)
@@ -29,7 +30,7 @@ export function CartProvider({ children }) {
       }
       return [...cur, {
         variantId: variant.id, productId: product.id, name: product.name, label: variant.label,
-        price: variant.price, stock: variant.stock, qty: Math.min(qty, variant.stock), image: coverOf(product.images)
+        price: variant.price, listPrice: onPromo(variant) ? variant.listPrice : null, stock: variant.stock, qty: Math.min(qty, variant.stock), image: coverOf(product.images)
       }]
     })
   const setQty = (variantId, qty) =>

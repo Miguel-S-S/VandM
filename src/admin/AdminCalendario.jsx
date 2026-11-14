@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listOrders } from '../lib/data'
-import { statusOf, ACTIVE_STATUSES } from '../lib/orders'
+import { useStatuses } from '../lib/statuses'
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const iso = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 
 export default function AdminCalendario() {
+  const { statusOf, inProgressKeys, steps } = useStatuses()
   const [orders, setOrders] = useState(null)
   const [error, setError] = useState('')
   const [cur, setCur] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
@@ -15,10 +16,10 @@ export default function AdminCalendario() {
 
   const byDay = useMemo(() => {
     const map = {}
-    ;(orders ?? []).filter((o) => o.estimated && o.status !== 'cancelado' && (!onlyActive || ACTIVE_STATUSES.includes(o.status)))
+    ;(orders ?? []).filter((o) => o.estimated && o.status !== 'cancelado' && (!onlyActive || inProgressKeys.includes(o.status)))
       .forEach((o) => { (map[o.estimated] ??= []).push(o) })
     return map
-  }, [orders, onlyActive])
+  }, [orders, onlyActive, inProgressKeys])
 
   const first = new Date(cur.y, cur.m, 1)
   const offset = (first.getDay() + 6) % 7 // lunes = 0
@@ -60,8 +61,8 @@ export default function AdminCalendario() {
         })}
       </div>
       <div className="row small" style={{ marginTop: '.8rem' }}>
-        {['recibido', 'confirmado', 'cosiendo', 'cargando_arena', 'listo', 'entregado'].map((k) => (
-          <span key={k} style={{ color: statusOf(k).color }}>● {statusOf(k).label}</span>
+        {steps.map((s) => (
+          <span key={s.key} style={{ color: s.color }}>● {s.label}</span>
         ))}
       </div>
     </>

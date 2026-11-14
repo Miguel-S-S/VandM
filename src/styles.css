@@ -206,3 +206,44 @@ td.low { color: var(--danger); font-weight: 600; }
 .line { margin-bottom: .7rem; }
 .check { display: flex; align-items: center; gap: .5rem; }
 .check input { width: auto; }
+
+/* ---- Etapa 6: confirmaciones, promos, combos, carrusel ---- */
+.modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .7); display: grid; place-items: center; padding: 1rem; backdrop-filter: blur(3px); }
+.modal { width: min(440px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; display: grid; gap: .6rem; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
+.modal h3 { margin: 0; } .modal p { margin: 0; }
+.btn.danger-btn { background: var(--danger); color: #fff; }
+.price-old { color: var(--muted); text-decoration: line-through; font-weight: 400; font-size: .85em; margin-left: .35rem; }
+.tag-combo { background: #3b82f6; color: #fff; }
+.chip.promo { border-color: var(--danger); }
+.promo-box { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; margin: .6rem 0; padding: .7rem; border: 1px dashed var(--danger); border-radius: var(--radius); }
+.promo-box label { width: 140px; }
+.combo-lines { display: grid; gap: .4rem; margin: .6rem 0; }
+.combo-line { display: flex; justify-content: space-between; gap: .6rem; align-items: center; background: var(--surface-2); border-radius: 10px; padding: .45rem .7rem; }
+.combo-includes { margin: 1rem 0; padding: .8rem 1rem; border: 1px solid var(--accent); border-radius: var(--radius); }
+.combo-includes ul { margin: .4rem 0 0; padding-left: 1.1rem; }
+.status-row { display: grid; grid-template-columns: 44px minmax(120px, 1fr) auto auto; gap: .6rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .5rem .7rem; }
+.status-row.off { opacity: .55; }
+.status-row .actions { flex-wrap: wrap; justify-content: flex-end; }
+.activity.hl { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.rel-acts { display: grid; gap: .5rem; margin-top: 1.2rem; }
+.rel-act { display: flex; gap: .7rem; align-items: center; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); background: var(--surface); }
+.rel-act:hover { border-color: var(--accent); } .rel-act small { color: var(--muted); display: block; }
+.banner { background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid var(--accent); border-radius: var(--radius); padding: .7rem 1rem; margin: .6rem 0 1rem; display: flex; justify-content: space-between; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+/* Carrusel */
+.cr { margin: 0 0 1.5rem; }
+.cr-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin-bottom: .6rem; }
+.cr-head h2 { margin: 0; font-size: 1.3rem; }
+.cr-ctrl { display: flex; gap: .4rem; }
+.cr-ctrl button { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 1.1rem; }
+.cr-ctrl button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); } .cr-ctrl button:disabled { opacity: .3; cursor: default; }
+.cr-view { overflow: hidden; border-radius: var(--radius); padding: .6rem 0; cursor: grab; touch-action: pan-y; }
+.cr-view:active { cursor: grabbing; }
+.cr-track { display: flex; gap: 16px; width: max-content; }
+.cr-slide { flex: none; }
+.cr-card { display: block; height: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; color: var(--text); user-select: none; }
+.cr-card:hover { border-color: var(--accent); }
+.cr-card .card-img { aspect-ratio: 4 / 3; } .cr-card img { pointer-events: none; }
+.cr-dots { display: flex; justify-content: center; gap: .4rem; margin-top: .5rem; }
+.cr-dots button { width: 8px; height: 8px; border-radius: 50%; border: 0; background: var(--border); padding: 0; cursor: pointer; transition: width .25s, background .25s; }
+.cr-dots button.on { width: 22px; border-radius: 4px; background: var(--accent); }

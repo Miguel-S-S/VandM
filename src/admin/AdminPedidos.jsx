@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom'
 import { listOrders, updateOrder } from '../lib/data'
 import { useSettings } from '../lib/settings'
 import { fmtMoney, fmtDate } from '../lib/format'
-import { STATUSES, ACTIVE_STATUSES, statusOf, fmtDay, waNumber } from '../lib/orders'
+import { fmtDay, waNumber } from '../lib/orders'
+import { useStatuses } from '../lib/statuses'
+import { useConfirm } from '../components/Confirm'
 import { StatusBadge, Progress } from '../pages/MisPedidos'
 
 export default function AdminPedidos() {
@@ -13,15 +15,31 @@ export default function AdminPedidos() {
   const open = params.get('open')
   const [error, setError] = useState('')
   const { settings } = useSettings()
+  const { all, active, statusOf, inProgressKeys } = useStatuses()
+  const ask = useConfirm()
   const load = () => listOrders().then(setOrders).catch((e) => setError(e.message))
   useEffect(() => { load() }, [])
 
-  const shown = orders?.filter((o) => filter === 'todos' ? true : filter === 'activos' ? ACTIVE_STATUSES.includes(o.status) : o.status === filter)
+  const shown = orders?.filter((o) => filter === 'todos' ? true : filter === 'activos' ? inProgressKeys.includes(o.status) : o.status === filter)
   const sel = orders?.find((o) => o.id === open)
+  const count = (k) => orders?.filter((o) => o.status === k).length ?? 0
+  // chips: los estados activos y, si quedaron pedidos en uno desactivado, también ese
+  const chipStatuses = all.filter((s) => s.active || count(s.key) > 0)
 
-  const patch = async (o, p) => {
+  const patch = async (o, p, confirmOpts) => {
     setError('')
-    try { await updateOrder(o.id, p); await load() } catch (e) { setError(e.message) }
+    if (confirmOpts && !(await ask.custom(confirmOpts))) return false
+    try { await updateOrder(o.id, p); await load(); return true } catch (e) { setError(e.message); return false }
+  }
+  const changeStatus = (o, key) => {
+    if (key === o.status) return
+    const to = statusOf(key)
+    return patch(o, { status: key }, {
+      title: 'Confirmar cambio de estado',
+      message: `¿Pasar el pedido N° ${o.number} de «${statusOf(o.status).label}» a «${to.label}»?`,
+      lines: key === 'cancelado' ? ['Al cancelar, el stock de los productos vuelve al inventario.'] : o.status === 'cancelado' ? ['Al reactivar un pedido cancelado, el stock se descuenta de nuevo.'] : undefined,
+      confirmText: 'Sí, cambiar', danger: key === 'cancelado'
+    })
   }
   const msgFor = (o) =>
     `Hola ${o.customerName.split(' ')[0]}! Tu pedido N° ${o.number} de ${settings.storeName} está: ${statusOf(o.status).label}.` +
@@ -32,9 +50,9 @@ export default function AdminPedidos() {
       <h2>Pedidos</h2>
       {error && <p className="alert">{error}</p>}
       <div className="chips">
-        {[['activos', 'En curso'], ['todos', 'Todos'], ...STATUSES.map((s) => [s.key, s.label])].map(([k, l]) => (
+        {[['activos', 'En curso'], ['todos', 'Todos'], ...chipStatuses.map((s) => [s.key, s.label])].map(([k, l]) => (
           <button key={k} className={'chip' + (filter === k ? ' on' : '')} onClick={() => setFilter(k)}>
-            {l}{k !== 'todos' && k !== 'activos' && orders ? ` (${orders.filter((o) => o.status === k).length})` : ''}
+            {l}{k !== 'todos' && k !== 'activos' && orders ? ` (${count(k)})` : ''}
           </button>
         ))}
       </div>
@@ -52,49 +70,67 @@ export default function AdminPedidos() {
         </div>
 
         {sel && (
-          <aside className="panel order-detail">
-            <div className="row between"><h3>Pedido N° {sel.number}</h3><button className="link muted" onClick={() => setParams({})}>Cerrar ✕</button></div>
-            <p><b>{sel.customerName}</b><br />
-              <a href={`https://wa.me/${waNumber(sel.phone)}`} target="_blank" rel="noreferrer">{sel.phone} (WhatsApp)</a></p>
-            {sel.notes && <p className="muted small">📝 {sel.notes}</p>}
-            <ul className="plain">
-              {sel.items.map((i, k) => <li key={k}>{i.qty} × <b>{i.name} {i.label}</b> <span className="muted">— {fmtMoney(i.price * i.qty)}</span></li>)}
-            </ul>
-            <p><b>Total {fmtMoney(sel.total)}</b></p>
-            <Progress status={sel.status} />
-
-            <label>Etapa
-              <select value={sel.status} onChange={(e) => patch(sel, { status: e.target.value })}>
-                {STATUSES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
-              </select>
-            </label>
-            <div className="row">
-              {(() => {
-                const idx = STATUSES.findIndex((s) => s.key === sel.status)
-                const next = STATUSES[idx + 1]
-                return next && next.key !== 'cancelado' && sel.status !== 'cancelado'
-                  ? <button className="btn" onClick={() => patch(sel, { status: next.key })}>Pasar a «{next.label}» →</button> : null
-              })()}
-              <a className="btn wa" style={{ width: 'auto' }} href={`https://wa.me/${waNumber(sel.phone)}?text=${encodeURIComponent(msgFor(sel))}`} target="_blank" rel="noreferrer">
-                Avisar al cliente
-              </a>
-            </div>
-            <label>Fecha estimada de entrega
-              <input type="date" value={sel.estimated ?? ''} onChange={(e) => patch(sel, { estimated: e.target.value })} />
-            </label>
-            <label>Notas internas
-              <textarea rows={2} defaultValue={sel.staffNotes} onBlur={(e) => e.target.value !== sel.staffNotes && patch(sel, { staffNotes: e.target.value })} placeholder="Ej: falta comprar cierres" />
-            </label>
-            <details>
-              <summary className="muted small">Historial de etapas</summary>
-              <ul className="plain small">
-                {sel.log.map((l, k) => <li key={k}>{fmtDate(l.at)} — {statusOf(l.status).label}</li>)}
-              </ul>
-            </details>
-            {sel.status === 'cancelado' && <p className="muted small">Al cancelar, el stock de los productos vuelve al inventario.</p>}
-          </aside>
+          <OrderDetail key={sel.id} o={sel} active={active} statusOf={statusOf} msg={msgFor(sel)}
+            onClose={() => setParams({})} changeStatus={changeStatus}
+            saveDate={(date) => patch(sel, { estimated: date }, { title: 'Confirmar modificación', message: `¿Cambiar la fecha estimada de entrega del pedido N° ${sel.number} a ${date ? fmtDay(date) : 'sin fecha'}?`, confirmText: 'Sí, guardar' })}
+            saveNotes={(txt) => patch(sel, { staffNotes: txt }, { title: 'Confirmar modificación', message: `¿Guardar las notas internas del pedido N° ${sel.number}?`, confirmText: 'Sí, guardar' })} />
         )}
       </div>
     </>
+  )
+}
+
+function OrderDetail({ o, active, statusOf, msg, onClose, changeStatus, saveDate, saveNotes }) {
+  const [date, setDate] = useState(o.estimated ?? '')
+  const [notes, setNotes] = useState(o.staffNotes ?? '')
+  useEffect(() => { setDate(o.estimated ?? ''); setNotes(o.staffNotes ?? '') }, [o.estimated, o.staffNotes])
+
+  // la lista del desplegable: estados activos (y el actual aunque se haya desactivado)
+  const options = active.some((s) => s.key === o.status) ? active : [...active, statusOf(o.status)]
+  const flow = active.filter((s) => s.key !== 'cancelado')
+  const idx = flow.findIndex((s) => s.key === o.status)
+  const next = o.status !== 'cancelado' ? flow[idx + 1] : null
+
+  return (
+    <aside className="panel order-detail">
+      <div className="row between"><h3>Pedido N° {o.number}</h3><button className="link muted" onClick={onClose}>Cerrar ✕</button></div>
+      <p><b>{o.customerName}</b><br />
+        <a href={`https://wa.me/${waNumber(o.phone)}`} target="_blank" rel="noreferrer">{o.phone} (WhatsApp)</a></p>
+      {o.notes && <p className="muted small">📝 {o.notes}</p>}
+      <ul className="plain">
+        {o.items.map((i, k) => <li key={k}>{i.qty} × <b>{i.name} {i.label}</b> <span className="muted">— {fmtMoney(i.price * i.qty)}</span></li>)}
+      </ul>
+      <p><b>Total {fmtMoney(o.total)}</b></p>
+      <Progress status={o.status} />
+
+      <label>Estado del pedido
+        <select value={o.status} onChange={(e) => changeStatus(o, e.target.value)}>
+          {options.map((s) => <option key={s.key} value={s.key}>{s.label}{s.active === false ? ' (desactivado)' : ''}</option>)}
+        </select>
+      </label>
+      <div className="row">
+        {next && <button className="btn" onClick={() => changeStatus(o, next.key)}>Pasar a «{next.label}» →</button>}
+        <a className="btn wa" style={{ width: 'auto' }} href={`https://wa.me/${waNumber(o.phone)}?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer">
+          Avisar al cliente
+        </a>
+      </div>
+      <label>Fecha estimada de entrega
+        <div className="row">
+          <input style={{ flex: 1 }} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <button type="button" className="btn ghost" disabled={date === (o.estimated ?? '')} onClick={() => saveDate(date)}>Guardar fecha</button>
+        </div>
+      </label>
+      <label>Notas internas
+        <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ej: falta comprar cierres" />
+        <button type="button" className="btn ghost" style={{ justifySelf: 'start' }} disabled={notes === (o.staffNotes ?? '')} onClick={() => saveNotes(notes)}>Guardar notas</button>
+      </label>
+      <details>
+        <summary className="muted small">Historial de etapas</summary>
+        <ul className="plain small">
+          {o.log.map((l, k) => <li key={k}>{fmtDate(l.at)} — {statusOf(l.status).label}</li>)}
+        </ul>
+      </details>
+      {o.status === 'cancelado' && <p className="muted small">Al cancelar, el stock de los productos vuelve al inventario.</p>}
+    </aside>
   )
 }

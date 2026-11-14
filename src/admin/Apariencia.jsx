@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSettings, applyTheme } from '../lib/settings'
 import { saveSettings } from '../lib/data'
 import { DEFAULT_SETTINGS, FONTS } from '../lib/demoData'
+import { useConfirm } from '../components/Confirm'
 
 const COLORS = [
   ['bg', 'Fondo'], ['surface', 'Tarjetas'], ['surface2', 'Tarjetas (2)'], ['border', 'Bordes'],
@@ -10,6 +11,7 @@ const COLORS = [
 ]
 
 export default function Apariencia() {
+  const ask = useConfirm()
   const { settings, update } = useSettings()
   const [s, setS] = useState(settings)
   const [msg, setMsg] = useState('')
@@ -20,6 +22,7 @@ export default function Apariencia() {
   const setSocial = (k, v) => setS({ ...s, social: { ...s.social, [k]: v } })
 
   const save = async () => {
+    if (!(await ask.update('la apariencia y los datos del negocio', ['Los cambios los verán todos los visitantes.']))) return
     setBusy(true); setMsg('')
     try { await saveSettings(s); update(s); setMsg('Guardado ✓') } catch (e) { setMsg(e.message) }
     setBusy(false)

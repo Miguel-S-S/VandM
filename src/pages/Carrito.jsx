@@ -48,7 +48,7 @@ export default function Carrito() {
             <div className="cart-img"><Photo src={i.image} alt={i.name} /></div>
             <div className="cart-info">
               <b>{i.name}</b>
-              <span className="muted">{i.label} · {fmtMoney(i.price)} c/u</span>
+              <span className="muted">{i.label} · {fmtMoney(i.price)} c/u{i.listPrice && <span className="price-old">{fmtMoney(i.listPrice)}</span>}</span>
               <div className="qty sm">
                 <button onClick={() => setQty(i.variantId, i.qty - 1)}>−</button>
                 <span>{i.qty}</span>

@@ -1,4 +1,4 @@
-// Etapas del pedido (la dueña confecciona: cose y carga la arena)
+// Etapas de fábrica del pedido. Las etapas vigentes se editan desde Panel → Estados (ver lib/statuses.jsx).
 export const STATUSES = [
   { key: 'recibido', label: 'Recibido', color: '#a3a3a3' },
   { key: 'confirmado', label: 'Confirmado', color: '#3b82f6' },

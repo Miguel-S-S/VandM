@@ -4,8 +4,10 @@ import { useSettings } from '../lib/settings'
 import { normalizePhone } from '../lib/phone'
 import { fmtDate } from '../lib/format'
 import { waNumber } from '../lib/orders'
+import { useConfirm } from '../components/Confirm'
 
 export default function AdminVerificaciones() {
+  const ask = useConfirm()
   const [rows, setRows] = useState(null)
   const [error, setError] = useState('')
   const { settings } = useSettings()
@@ -43,8 +45,8 @@ export default function AdminVerificaciones() {
                 onClick={() => !r.sent && markCodeSent(r.id).then(load)}>
                 Enviar por WhatsApp
               </a>
-              <button className="link" onClick={() => confirm('¿Verificar a este cliente sin código? (por ejemplo, si ya lo conocés)') && run(() => verifyUserManually(r.user_id, r.id))}>Verificar manualmente</button>
-              <button className="link danger" onClick={() => run(() => discardCode(r.id))}>Descartar</button>
+              <button className="link" onClick={async () => (await ask.custom({ title: 'Confirmar modificación', message: `¿Verificar a ${r.profile?.full_name ?? 'este cliente'} sin código? (por ejemplo, si ya lo conocés)`, confirmText: 'Sí, verificar' })) && run(() => verifyUserManually(r.user_id, r.id))}>Verificar manualmente</button>
+              <button className="link danger" onClick={async () => (await ask.remove(`el código de ${r.profile?.full_name ?? 'este cliente'}`, 'Tendrá que pedir uno nuevo.')) && run(() => discardCode(r.id))}>Descartar</button>
             </div>
           </div>
         ))}

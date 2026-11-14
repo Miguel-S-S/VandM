@@ -5,6 +5,8 @@ import App from './App'
 import { AuthProvider } from './lib/auth'
 import { CartProvider } from './lib/cart'
 import { SettingsProvider } from './lib/settings'
+import { StatusProvider } from './lib/statuses'
+import { ConfirmProvider } from './components/Confirm'
 import './styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,7 +15,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <SettingsProvider>
         <AuthProvider>
           <CartProvider>
-            <App />
+            <StatusProvider>
+              <ConfirmProvider>
+                <App />
+              </ConfirmProvider>
+            </StatusProvider>
           </CartProvider>
         </AuthProvider>
       </SettingsProvider>

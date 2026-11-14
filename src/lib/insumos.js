@@ -8,9 +8,19 @@ export const COST_TABLES = ['suppliers', 'materials', 'purchases', 'supplier_pri
 const ok = ({ data, error }) => { if (error) throw new Error(error.message); return data }
 
 /* ---------- Proveedores ---------- */
+// acepta "miproveedor.com.ar" y lo deja como "https://miproveedor.com.ar"; solo permite http/https
+export function normalizeWebsite(v) {
+  const t = String(v ?? '').trim()
+  if (!t) return ''
+  const url = /^[a-z][a-z0-9+.-]*:/i.test(t) ? t : 'https://' + t
+  let u
+  try { u = new URL(url) } catch { throw new Error('El enlace a la página web no es válido') }
+  if (!['http:', 'https:'].includes(u.protocol) || !u.hostname.includes('.')) throw new Error('El enlace a la página web no es válido (ej: https://proveedor.com.ar)')
+  return u.href
+}
 export const listSuppliers = async () => ok(await db().from('suppliers').select('*').order('name'))
 export async function saveSupplier(s) {
-  const row = { name: s.name.trim(), phone: s.phone?.trim() ?? '', notes: s.notes?.trim() ?? '', active: s.active !== false }
+  const row = { name: s.name.trim(), phone: s.phone?.trim() ?? '', website: normalizeWebsite(s.website), notes: s.notes?.trim() ?? '', active: s.active !== false }
   if (!row.name) throw new Error('Ingresá el nombre del proveedor')
   if (s.id) ok(await db().from('suppliers').update(row).eq('id', s.id))
   else ok(await db().from('suppliers').insert(row))
@@ -45,6 +55,12 @@ export async function addPrice({ materialId, supplierId, price, note }) {
   ok(await db().from('supplier_prices').insert({ material_id: materialId, supplier_id: supplierId, price: Number(price), source: 'cotizacion', note: note ?? '' }))
 }
 
+export async function updatePrice(id, { price, note }) {
+  if (!(Number(price) >= 0) || price === '') throw new Error('Ingresá un precio válido')
+  ok(await db().from('supplier_prices').update({ price: Number(price), note: note ?? '' }).eq('id', id))
+}
+export async function deletePrice(id) { ok(await db().from('supplier_prices').delete().eq('id', id)) }
+
 // último precio de cada (insumo, proveedor) y el anterior, para ver variaciones
 export function priceMatrix(prices) {
   const by = {}
@@ -71,6 +87,10 @@ export async function registerPurchase({ supplierId, date, ref, notes, items, sh
       width_cm: i.width === '' || i.width == null ? null : Number(i.width), size_note: i.sizeNote || ''
     }))
   }))
+}
+// corrige los datos de la compra (proveedor, fecha, factura, notas); las cantidades y el stock no se tocan
+export async function updatePurchase(id, { supplierId, date, ref, notes }) {
+  ok(await db().from('purchases').update({ supplier_id: supplierId || null, purchase_date: date, invoice_ref: ref ?? '', notes: notes ?? '' }).eq('id', id))
 }
 export const listPurchases = async () => ok(await db().from('purchases').select('*').order('created_at', { ascending: false }).limit(300))
 export async function listPurchaseItems(purchaseIds) {
@@ -115,7 +135,7 @@ export async function listAuditFull({ table, action, from, to, limit = 500 } = {
   if (from) q = q.gte('changed_at', from + 'T00:00:00')
   if (to) q = q.lte('changed_at', to + 'T23:59:59')
   let rows = ok(await q.order('changed_at', { ascending: false }).limit(limit))
-  if (!hasSupabase && localStorage.getItem('vm_demo_role') !== 'duena') rows = rows.filter((r) => !COST_TABLES.includes(r.table_name))
+  if (!hasSupabase && !['duena', 'admin'].includes(localStorage.getItem('vm_demo_role'))) rows = rows.filter((r) => !COST_TABLES.includes(r.table_name))
   if (!hasSupabase) { // en demo también se muestran los cambios de precio/stock de productos (guardados aparte)
     try {
       const legacy = JSON.parse(localStorage.getItem('vm_audit') ?? '[]').map((r) => ({ ...r, changed_by: localStorage.getItem('vm_demo_role') || 'demo' }))

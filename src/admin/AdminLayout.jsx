@@ -46,6 +46,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/pedidos">Pedidos{newCount > 0 && <b className="badge-inline">{newCount}</b>}</NavLink>
           <NavLink to="/admin/calendario">Calendario</NavLink>
           <NavLink to="/admin/verificaciones">Verificaciones{codeCount > 0 && <b className="badge-inline">{codeCount}</b>}</NavLink>
+          <NavLink to="/admin/estados">Estados</NavLink>
         </nav>
         <nav className="tabs">
           <span className="tabs-label">Catálogo</span>
@@ -54,9 +55,9 @@ export default function AdminLayout() {
           <NavLink to="/admin/actividades">Actividades</NavLink>
           <NavLink to="/admin/noticias">Noticias</NavLink>
         </nav>
-        {role === 'duena' && (
+        {(role === 'duena' || role === 'admin') && (
           <nav className="tabs">
-            <span className="tabs-label">Costos (dueña)</span>
+            <span className="tabs-label">Costos</span>
             <NavLink to="/admin/insumos">Insumos</NavLink>
             <NavLink to="/admin/proveedores">Proveedores</NavLink>
             <NavLink to="/admin/compras">Compras</NavLink>

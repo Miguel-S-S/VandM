@@ -5,8 +5,11 @@ import { listProducts, deleteProduct, resetDemo } from '../lib/data'
 import { useAuth } from '../lib/auth'
 import { fmtMoney } from '../lib/format'
 import { Photo } from '../components/ProductCard'
+import { useConfirm } from '../components/Confirm'
+import { hasPromo } from '../lib/pricing'
 
 export default function AdminProductos() {
+  const ask = useConfirm()
   const [list, setList] = useState(null)
   const [error, setError] = useState('')
   const { demo } = useAuth()
@@ -14,7 +17,7 @@ export default function AdminProductos() {
   useEffect(() => { load() }, [])
 
   const del = async (p) => {
-    if (!confirm(`¿Eliminar "${p.name}" y todas sus variantes?`)) return
+    if (!(await ask.remove(`«${p.name}»`, p.isCombo ? '' : 'Se borran también todas sus variantes (pesos).'))) return
     try { await deleteProduct(p.id); load() } catch (e) { setError(e.message) }
   }
 
@@ -35,7 +38,7 @@ export default function AdminProductos() {
               return (
                 <tr key={p.id}>
                   <td className="thumb-cell"><Photo src={coverOf(p.images)} alt="" /></td>
-                  <td><b>{p.name}</b></td>
+                  <td><b>{p.name}</b>{p.isCombo && <span className="pill" style={{ marginLeft: '.4rem', background: '#3b82f6', color: '#fff' }}>Combo</span>}{hasPromo(p) && <span className="pill" style={{ marginLeft: '.4rem', background: 'var(--danger)', color: '#fff' }}>Oferta</span>}</td>
                   <td>{p.categoryName ?? p.category ?? '—'}</td>
                   <td>{p.variants.length}</td>
                   <td>{prices.length ? fmtMoney(Math.min(...prices)) : '—'}</td>
@@ -52,7 +55,7 @@ export default function AdminProductos() {
         </table>
       </div>
       {demo && (
-        <button className="link muted" onClick={() => { if (confirm('¿Restaurar los datos de ejemplo?')) { resetDemo(); load() } }}>
+        <button className="link muted" onClick={async () => { if (await ask.custom({ title: 'Restaurar datos', message: '¿Restaurar los datos de ejemplo? Se pierden los cambios locales.', confirmText: 'Sí, restaurar', danger: true })) { resetDemo(); load() } }}>
           Restaurar datos de ejemplo
         </button>
       )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import { getProduct } from '../lib/data'
+import { getProduct, listActivities } from '../lib/data'
 import { useCart } from '../lib/cart'
 import { useSettings } from '../lib/settings'
 import { useAuth } from '../lib/auth'
@@ -8,6 +8,8 @@ import { fmtMoney } from '../lib/format'
 import { Photo } from '../components/ProductCard'
 import { photosOf, igOf, ytOf, igPostUrl } from '../lib/images'
 import { IgFrame, YtFrame } from '../components/Media'
+import { onPromo, pctOff } from '../lib/pricing'
+import { relatedActivities, activitiesLink } from '../lib/related'
 
 export default function Producto() {
   const { id } = useParams()
@@ -20,6 +22,7 @@ export default function Producto() {
   const [img, setImg] = useState(0)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+  const [acts, setActs] = useState([])
 
   useEffect(() => {
     getProduct(id).then((x) => {
@@ -28,6 +31,11 @@ export default function Producto() {
       setSel(first?.id ?? null)
     })
   }, [id])
+  // ejercicios que usan este artículo (o, si es combo, los artículos que trae)
+  useEffect(() => {
+    if (!p) return
+    listActivities().then((a) => setActs(relatedActivities(a.filter((x) => x.published), p))).catch(() => setActs([]))
+  }, [p])
 
   if (p === undefined) return <p className="muted center">Cargando…</p>
   if (p === null) return <p className="center">Producto no encontrado. <Link to="/">Volver a la tienda</Link></p>
@@ -55,15 +63,34 @@ export default function Producto() {
         <div>
           <p className="eyebrow">{p.categoryName ?? p.category}</p>
           <h1>{p.name}</h1>
-          <p className="price big">{v ? fmtMoney(v.price) : 'Consultar'}</p>
+          <p className="price big">
+            {v ? fmtMoney(v.price) : 'Consultar'}
+            {v && onPromo(v) && <><span className="price-old">{fmtMoney(v.listPrice)}</span> <span className="pill" style={{ background: 'var(--danger)', color: '#fff' }}>-{pctOff(v)}%</span></>}
+          </p>
+          {v && onPromo(v) && (v.promoLabel || v.promoEnds) && (
+            <p className="small" style={{ color: 'var(--danger)' }}>
+              {v.promoLabel}{v.promoLabel && v.promoEnds ? ' · ' : ''}{v.promoEnds && `válida hasta el ${new Date(v.promoEnds.slice(0, 10) + 'T12:00:00').toLocaleDateString('es-AR')}`}
+            </p>
+          )}
           <p className="muted">{p.description}</p>
 
-          <h4>Peso</h4>
-          <div className="variants">
+          {p.isCombo && (p.comboItems ?? []).length > 0 && (
+            <div className="combo-includes">
+              <b>Este combo incluye:</b>
+              <ul>
+                {p.comboItems.map((i, k) => <li key={k}>{i.qty} × <Link to={`/producto/${i.productId}`}>{i.name} {i.label}</Link></li>)}
+              </ul>
+              {onPromo(v) && <p className="small" style={{ margin: '.5rem 0 0' }}>Comprados por separado: <b>{fmtMoney(v.listPrice)}</b> · ahorrás <b>{fmtMoney(v.listPrice - v.price)}</b></p>}
+            </div>
+          )}
+
+          {!p.isCombo && <h4>Peso</h4>}
+          <div className="variants" style={p.isCombo ? { display: 'none' } : undefined}>
             {variants.map((x) => (
               <button key={x.id} disabled={x.stock <= 0} className={'variant' + (x.id === sel ? ' on' : '')}
                 onClick={() => { setSel(x.id); setQty(1) }}>
                 {x.label}
+                {x.stock > 0 && onPromo(x) && <small style={{ color: 'var(--danger)' }}>-{pctOff(x)}%</small>}
                 {x.stock <= 0 && <small>sin stock</small>}
               </button>
             ))}
@@ -112,8 +139,21 @@ export default function Producto() {
               ))}
             </div>
           )}
-          <Link to="/actividades" className="link-box">
-            💪 ¿Cómo usar {p.name.toLowerCase()}? Ver ejercicios recomendados →
+          {acts.length > 0 && (
+            <div className="rel-acts">
+              <h4 style={{ margin: 0 }}>Ejercicios con {p.isCombo ? 'este combo' : 'este artículo'}</h4>
+              {acts.slice(0, 3).map((a) => (
+                <Link key={a.id} className="rel-act" to={activitiesLink(p, a.id)}>
+                  <span style={{ fontSize: '1.4rem' }}>💪</span>
+                  <span><b>{a.title}</b><small>{[a.level, a.minutes && `${a.minutes} min`].filter(Boolean).join(' · ')}</small></span>
+                </Link>
+              ))}
+            </div>
+          )}
+          <Link to={acts.length > 0 ? activitiesLink(p) : '/actividades'} className="link-box">
+            💪 {acts.length > 0
+              ? `Ver ${acts.length === 1 ? 'el ejercicio recomendado' : `los ${acts.length} ejercicios recomendados`} →`
+              : `¿Cómo usar ${p.name.toLowerCase()}? Ver ejercicios recomendados →`}
           </Link>
         </div>
       </div>

@@ -29,7 +29,7 @@ function data() {
 }
 
 const DEFAULTS = {
-  suppliers: { phone: '', notes: '', active: true },
+  suppliers: { phone: '', website: '', notes: '', active: true },
   materials: { category: 'otro', unit: 'u', stock: 0, min_stock: 0, avg_cost: 0, last_cost: 0, width_cm: null, waste_pct: 0, active: true, notes: '' },
   labor_steps: { minutes_base: 0, minutes_per_kg: 0, sort: 99, active: true },
   cut_templates: { margin_cm: 0, waste_pct: 0, pieces: [], note: '' },

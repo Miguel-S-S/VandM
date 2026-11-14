@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listSuppliers, listMaterials, listPrices, listPurchases, listPurchaseItems, registerPurchase, priceMatrix } from '../lib/insumos'
+import { listSuppliers, listMaterials, listPrices, listPurchases, listPurchaseItems, registerPurchase, updatePurchase, priceMatrix } from '../lib/insumos'
+import { useConfirm } from '../components/Confirm'
 import { fmtMoney, fmtNum, fmtDay } from '../lib/format'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const blankLine = () => ({ key: Math.random().toString(36).slice(2), materialId: '', qty: '', missing: '', price: '', width: '', sizeNote: '' })
 
 export default function AdminCompras() {
+  const ask = useConfirm()
+  const [pe, setPe] = useState(null) // compra cuyos datos se están corrigiendo
   const [sup, setSup] = useState([])
   const [mats, setMats] = useState([])
   const [prices, setPrices] = useState([])
@@ -43,6 +46,11 @@ export default function AdminCompras() {
     if (!items[p.id]) { try { const it = await listPurchaseItems([p.id]); setItems((x) => ({ ...x, [p.id]: it })) } catch (e) { setError(e.message) } }
   }
 
+  const submitEdit = async (p) => {
+    setError(''); setInfo('')
+    if (!(await ask.update(`los datos de la compra del ${fmtDay(p.purchase_date)}`, ['Las cantidades, el stock y los costos no cambian.']))) return
+    try { await updatePurchase(p.id, pe); setPe(null); await load(); setInfo('Compra actualizada') } catch (err) { setError(err.message) }
+  }
   const submit = async (e) => {
     e.preventDefault(); setError(''); setInfo('')
     const lines = form.lines.filter((l) => l.materialId || l.qty || l.price || l.missing)
@@ -53,6 +61,8 @@ export default function AdminCompras() {
       if (Number(l.qty) < 0 || Number(l.missing) < 0) return setError('Las cantidades no pueden ser negativas')
       if (l.price === '' || !(Number(l.price) >= 0)) return setError('Ingresá el precio unitario en todas las líneas')
     }
+    const lineTotal = lines.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.price) || 0), 0) + (Number(form.shipping) || 0)
+    if (!(await ask.create(`la compra a ${supName(form.supplierId)} por ${fmtMoney(lineTotal)}`, ['Suma el stock recibido y actualiza costos y precios del proveedor.']))) return
     setBusy(true)
     try {
       await registerPurchase({ supplierId: form.supplierId, date: form.date, ref: form.ref, notes: form.notes, shipping: form.shipping, items: lines })
@@ -123,6 +133,22 @@ export default function AdminCompras() {
               <div><b>{fmtDay(p.purchase_date)}</b> · {supName(p.supplier_id)}<br /><span className="muted small">{p.invoice_ref && `N° ${p.invoice_ref}`} {p.notes}{Number(p.shipping) > 0 && ` · envío ${fmtMoney(p.shipping)}`}</span></div>
               <div style={{ textAlign: 'right' }}><b>{fmtMoney(p.total)}</b><br /><span className="muted small">{open === p.id ? '▲ ocultar' : '▼ ver detalle'}</span></div>
             </button>
+            {open === p.id && (
+              <div style={{ marginTop: '.6rem' }}>
+                {pe?.id === p.id ? (
+                  <div className="form-grid">
+                    <label>Proveedor<select value={pe.supplierId} onChange={(e) => setPe({ ...pe, supplierId: e.target.value })}>
+                      <option value="">— sin proveedor —</option>{sup.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+                    <label>Fecha<input type="date" value={pe.date} max={today()} onChange={(e) => setPe({ ...pe, date: e.target.value })} /></label>
+                    <label>N° de factura / remito<input value={pe.ref} onChange={(e) => setPe({ ...pe, ref: e.target.value })} /></label>
+                    <label>Notas<input value={pe.notes} onChange={(e) => setPe({ ...pe, notes: e.target.value })} /></label>
+                    <div className="row full"><button type="button" className="btn" onClick={() => submitEdit(p)}>Guardar cambios</button><button type="button" className="btn ghost" onClick={() => setPe(null)}>Cancelar</button></div>
+                  </div>
+                ) : (
+                  <button type="button" className="link" onClick={() => setPe({ id: p.id, supplierId: p.supplier_id ?? '', date: String(p.purchase_date).slice(0, 10), ref: p.invoice_ref ?? '', notes: p.notes ?? '' })}>Editar datos de la compra</button>
+                )}
+              </div>
+            )}
             {open === p.id && (
               <ul className="plain" style={{ marginTop: '.6rem' }}>
                 {(items[p.id] ?? []).map((i) => (

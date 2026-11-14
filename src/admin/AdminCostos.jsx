@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { listMaterials, listCuts, saveCut, deleteCut, listSteps, saveStep, deleteStep, getCostSettings, saveCostSettings } from '../lib/insumos'
 import { planCut, metersWithWaste, laborFor } from '../lib/cuts'
 import { fmtMoney, fmtNum } from '../lib/format'
+import { useConfirm } from '../components/Confirm'
 
 const blank = () => ({ key: Math.random().toString(36).slice(2), label: '', w: '', h: '', n: 1 })
 
 export default function AdminCostos() {
+  const ask = useConfirm()
   const [tab, setTab] = useState('corte')
   const [mats, setMats] = useState([])
   const [cuts, setCuts] = useState([])
@@ -35,7 +37,12 @@ export default function AdminCostos() {
   const setPiece = (key, p) => setC((x) => ({ ...x, pieces: x.pieces.map((q) => (q.key === key ? { ...q, ...p } : q)) }))
   const pickMat = (id) => { const m = mats.find((x) => x.id === id); setC((x) => ({ ...x, materialId: id, rollWidth: m?.width_cm ?? x.rollWidth })) }
 
-  const saveTemplate = () => run(async () => {
+  const saveTemplate = async () => {
+    if (result.error) return setError(result.error)
+    if (!(await ask.save(`la plantilla «${c.name.trim() || 'sin nombre'}»`, !c.id))) return
+    return doSaveTemplate()
+  }
+  const doSaveTemplate = () => run(async () => {
     if (result.error) throw new Error(result.error)
     await saveCut({ id: c.id, name: c.name, material_id: c.materialId, roll_width_cm: c.rollWidth, margin_cm: c.margin, length_cm: result.lengthCm, waste_pct: wastePct, note: c.note,
       pieces: c.pieces.filter((p) => Number(p.n) > 0).map(({ label, w, h, n }) => ({ label, w: Number(w), h: Number(h), n: Number(n) })) })
@@ -51,7 +58,7 @@ export default function AdminCostos() {
   return (
     <>
       <h2>Costos y tiempos</h2>
-      <p className="muted small">Solo visible para la dueña. Acá se calcula el corte de tela y se definen los tiempos de elaboración y qué se cuenta en el costo.</p>
+      <p className="muted small">Visible para la dueña y el administrador. Acá se calcula el corte de tela y se definen los tiempos de elaboración y qué se cuenta en el costo.</p>
       <div className="chips">
         {[['corte', 'Corte de tela'], ['tiempos', 'Tiempos de elaboración'], ['criterios', 'Qué contar en el costo']].map(([k, l]) => (
           <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>
@@ -105,7 +112,7 @@ export default function AdminCostos() {
             {cuts.map((t) => (
               <div key={t.id} className="item" style={{ gridTemplateColumns: '1fr auto' }}>
                 <div><b>{t.name}</b><span className="muted small">{mats.find((m) => m.id === t.material_id)?.name ?? 'Sin tela'} · rollo {fmtNum(t.roll_width_cm)} cm · {fmtNum(t.length_cm)} cm de largo · {fmtNum(metersWithWaste(t.length_cm, t.waste_pct), 3)} m con merma · {(t.pieces ?? []).reduce((n, p) => n + Number(p.n), 0)} piezas</span></div>
-                <div className="actions"><button className="link" onClick={() => loadTemplate(t)}>Abrir</button><button className="link danger" onClick={() => confirm(`¿Eliminar “${t.name}”?`) && run(() => deleteCut(t.id))}>Eliminar</button></div>
+                <div className="actions"><button className="link" onClick={() => loadTemplate(t)}>Abrir</button><button className="link danger" onClick={async () => (await ask.remove(`la plantilla «${t.name}»`)) && run(() => deleteCut(t.id), 'Plantilla eliminada')}>Eliminar</button></div>
               </div>
             ))}
           </div>
@@ -117,7 +124,7 @@ export default function AdminCostos() {
           <p className="muted small">Minutos de cada etapa. “Por kg” sirve para lo que cambia con el peso, como la carga de arena o el relleno. Son tiempos de referencia que podés cambiar cuando quieras.</p>
           <button className="btn" onClick={() => setSf({ name: '', minutes_base: 0, minutes_per_kg: 0, active: true })}>+ Nueva etapa</button>
           {sf && (
-            <form className="panel form-grid" style={{ marginTop: '1rem' }} onSubmit={(e) => { e.preventDefault(); run(async () => { await saveStep(sf); setSf(null) }, 'Guardado') }}>
+            <form className="panel form-grid" style={{ marginTop: '1rem' }} onSubmit={async (e) => { e.preventDefault(); if (await ask.save(`la etapa «${sf.name.trim()}»`, !sf.id)) run(async () => { await saveStep(sf); setSf(null) }, 'Guardado') }}>
               <label>Etapa<input value={sf.name} onChange={(e) => setSf({ ...sf, name: e.target.value })} required /></label>
               <label>Minutos fijos<input type="number" min="0" step="any" value={sf.minutes_base} onChange={(e) => setSf({ ...sf, minutes_base: e.target.value })} /></label>
               <label>Minutos por kg<input type="number" min="0" step="any" value={sf.minutes_per_kg} onChange={(e) => setSf({ ...sf, minutes_per_kg: e.target.value })} /></label>
@@ -130,7 +137,7 @@ export default function AdminCostos() {
             <tbody>{steps.map((s) => (
               <tr key={s.id}><td><b>{s.name}</b></td><td>{fmtNum(s.minutes_base)}</td><td>{fmtNum(s.minutes_per_kg)}</td><td>{s.active ? 'Sí' : 'No'}</td>
                 <td className="actions"><button className="link" onClick={() => setSf({ ...s })}>Editar</button>
-                  <button className="link danger" onClick={() => confirm(`¿Eliminar “${s.name}”?`) && run(() => deleteStep(s.id))}>Eliminar</button></td></tr>
+                  <button className="link danger" onClick={async () => (await ask.remove(`la etapa «${s.name}»`)) && run(() => deleteStep(s.id), 'Etapa eliminada')}>Eliminar</button></td></tr>
             ))}</tbody></table></div>
           <h3>Tiempo por peso</h3>
           <div className="table-wrap"><table className="table">
@@ -142,7 +149,7 @@ export default function AdminCostos() {
       )}
 
       {tab === 'criterios' && cfg && (
-        <form className="panel form-grid" onSubmit={(e) => { e.preventDefault(); run(() => saveCostSettings(cfg), 'Criterios guardados') }}>
+        <form className="panel form-grid" onSubmit={async (e) => { e.preventDefault(); if (await ask.update('los criterios de costo')) run(() => saveCostSettings(cfg), 'Criterios guardados') }}>
           <h3 className="full">Qué entra en el costo y el balance</h3>
           <label className="check full"><input type="checkbox" checked={cfg.count_labor} onChange={(e) => setCfg({ ...cfg, count_labor: e.target.checked })} /> Contar la mano de obra (tiempo de elaboración) en el costo de los productos</label>
           <label>Valor de la hora de trabajo ($)<input type="number" min="0" step="any" value={cfg.labor_hour_cost} onChange={(e) => setCfg({ ...cfg, labor_hour_cost: e.target.value })} /></label>
