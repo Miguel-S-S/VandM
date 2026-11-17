@@ -51,6 +51,7 @@ export default function AdminLayout() {
         <nav className="tabs">
           <span className="tabs-label">Catálogo</span>
           <NavLink to="/admin/productos">Productos</NavLink>
+          <NavLink to="/admin/presupuestos">Lista de precios</NavLink>
           <NavLink to="/admin/categorias">Categorías</NavLink>
           <NavLink to="/admin/actividades">Actividades</NavLink>
           <NavLink to="/admin/noticias">Noticias</NavLink>

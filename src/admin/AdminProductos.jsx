@@ -1,6 +1,6 @@
 import { coverOf } from '../lib/images'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { listProducts, deleteProduct, resetDemo } from '../lib/data'
 import { useAuth } from '../lib/auth'
 import { fmtMoney } from '../lib/format'
@@ -10,6 +10,7 @@ import { hasPromo } from '../lib/pricing'
 
 export default function AdminProductos() {
   const ask = useConfirm()
+  const nav = useNavigate()
   const [list, setList] = useState(null)
   const [error, setError] = useState('')
   const { demo } = useAuth()
@@ -25,18 +26,23 @@ export default function AdminProductos() {
     <>
       <div className="row between">
         <h2>Productos</h2>
-        <Link to="/admin/productos/nuevo" className="btn">+ Nuevo producto</Link>
+        <div className="row">
+          <Link to="/admin/presupuestos" className="btn ghost">Lista de precios</Link>
+          <Link to="/admin/productos/nuevo" className="btn">+ Nuevo producto</Link>
+        </div>
       </div>
       {error && <p className="alert">{error}</p>}
       {!list && <p className="muted">Cargando…</p>}
       <div className="table-wrap">
         <table className="table">
-          <thead><tr><th></th><th>Producto</th><th>Categoría</th><th>Variantes</th><th>Precio desde</th><th>Stock</th><th>Estado</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Producto</th><th>Categoría</th><th>Variantes</th><th>Precio desde</th><th>Stock</th><th>Estado</th><th className="sticky-actions"></th></tr></thead>
           <tbody>
             {list?.map((p) => {
               const prices = p.variants.map((v) => v.price)
               return (
-                <tr key={p.id}>
+                <tr key={p.id} className="row-click" tabIndex={0} title="Tocá para editar"
+                  onClick={() => nav(`/admin/productos/${p.id}`)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) nav(`/admin/productos/${p.id}`) }}>
                   <td className="thumb-cell"><Photo src={coverOf(p.images)} alt="" /></td>
                   <td><b>{p.name}</b>{p.isCombo && <span className="pill" style={{ marginLeft: '.4rem', background: '#3b82f6', color: '#fff' }}>Combo</span>}{hasPromo(p) && <span className="pill" style={{ marginLeft: '.4rem', background: 'var(--danger)', color: '#fff' }}>Oferta</span>}</td>
                   <td>{p.categoryName ?? p.category ?? '—'}</td>
@@ -44,7 +50,7 @@ export default function AdminProductos() {
                   <td>{prices.length ? fmtMoney(Math.min(...prices)) : '—'}</td>
                   <td>{p.variants.reduce((n, v) => n + v.stock, 0)}</td>
                   <td><span className={'pill ' + (p.active ? 'ok' : 'off')}>{p.active ? 'Activo' : 'Oculto'}</span></td>
-                  <td className="actions">
+                  <td className="actions sticky-actions" onClick={(e) => e.stopPropagation()}>
                     <Link to={`/admin/productos/${p.id}`} className="link">Editar</Link>
                     <button className="link danger" onClick={() => del(p)}>Eliminar</button>
                   </td>

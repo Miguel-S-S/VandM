@@ -247,3 +247,31 @@ td.low { color: var(--danger); font-weight: 600; }
 .cr-dots { display: flex; justify-content: center; gap: .4rem; margin-top: .5rem; }
 .cr-dots button { width: 8px; height: 8px; border-radius: 50%; border: 0; background: var(--border); padding: 0; cursor: pointer; transition: width .25s, background .25s; }
 .cr-dots button.on { width: 22px; border-radius: 4px; background: var(--accent); }
+
+/* ---- Productos: fila clicable y botones de acción siempre visibles ---- */
+.table tr.row-click { cursor: pointer; }
+.table tr.row-click:hover td, .table tr.row-click:focus-visible td { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.table tr.row-click:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.table td.sticky-actions, .table th.sticky-actions { position: sticky; right: 0; background: var(--surface); box-shadow: -8px 0 8px -8px rgba(0, 0, 0, .7); }
+.table tr.row-click:hover td.sticky-actions { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+
+/* ---- Lista de precios / presupuesto ---- */
+.pp-grid { display: grid; gap: 1rem; align-items: start; }
+@media (min-width: 980px) { .pp-grid { grid-template-columns: 1.4fr 1fr; } .pp-side { position: sticky; top: 4.5rem; } }
+.pp-prod { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.pp-prod-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .6rem .9rem; background: var(--surface-2); flex-wrap: wrap; }
+.pp-var { display: grid; grid-template-columns: auto 1fr auto; gap: .6rem; align-items: center; padding: .45rem .9rem; border-top: 1px solid var(--border); cursor: pointer; }
+.pp-var.on { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.pp-var.off { opacity: .55; }
+.pp-sel { display: grid; grid-template-columns: 1fr auto auto auto; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.pp-sel input { padding: .3rem .4rem !important; text-align: right; }
+.pp-sel .pp-num { width: 62px; }
+.pp-tot { display: grid; gap: .25rem; margin-top: .6rem; }
+.pp-tot div { display: flex; justify-content: space-between; }
+.pp-tot .big { font-family: var(--font-heading); font-size: 1.5rem; color: var(--accent); }
+.pp-segment { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.pp-segment button { background: transparent; border: 0; padding: .4rem 1rem; cursor: pointer; color: var(--muted); }
+.pp-segment button.on { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+.pp-bar { position: sticky; bottom: .6rem; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: .6rem; width: 100%; margin-top: 1rem;
+  background: var(--accent); color: var(--accent-text); border: 0; border-radius: 999px; padding: .75rem 1.2rem; font-family: var(--font-heading); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
+@media (min-width: 980px) { .pp-bar { display: none; } }

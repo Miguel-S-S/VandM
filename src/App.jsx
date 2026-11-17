@@ -15,6 +15,7 @@ import AdminCalendario from './admin/AdminCalendario'
 import AdminLayout from './admin/AdminLayout'
 import AdminProductos from './admin/AdminProductos'
 import ProductoForm from './admin/ProductoForm'
+import AdminPresupuestos from './admin/AdminPresupuestos'
 import Apariencia from './admin/Apariencia'
 import Auditoria from './admin/Auditoria'
 import AdminCategorias from './admin/AdminCategorias'
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="estados" element={<AdminEstados />} />
           <Route path="calendario" element={<AdminCalendario />} />
           <Route path="productos" element={<AdminProductos />} />
+          <Route path="presupuestos" element={<AdminPresupuestos />} />
           <Route path="productos/nuevo" element={<ProductoForm />} />
           <Route path="productos/:id" element={<ProductoForm />} />
           <Route path="categorias" element={<AdminCategorias />} />
